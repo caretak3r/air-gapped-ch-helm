@@ -16,34 +16,46 @@ We need to deploy ClickHouse with compute nodes, API layer, and S3 storage integ
 
 ### Architecture Overview
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Kubernetes Cluster                       │
-│                    (Air-gapped)                            │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │ ClickHouse  │  │ ClickHouse  │  │ ClickHouse  │         │
-│  │ Keeper      │  │ Server 1    │  │ Server 2    │         │
-│  │ (Coordinator)│  │ (Compute)   │  │ (Compute)   │         │
-│  └─────────────┘  └─────────────┘  └─────────────┘         │
-│         │                │                │                │
-│         └────────────────┼────────────────┘                │
-│                          │                                 │
-│  ┌────────────────────────┼─────────────────────────────┐   │
-│  │       API Layer                                    │   │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
-│  │  │ REST API    │  │ GraphQL API │  │ Admin API   │  │   │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘  │   │
-│  └────────────────────────┼─────────────────────────────┘   │
-│                           │                                 │
-│  ┌────────────────────────┼─────────────────────────────┐   │
-│  │       Storage Layer                               │   │
-│  │  ┌─────────────────────────────────────────────┐  │   │
-│  │  │          S3-Compatible Storage              │  │   │
-│  │  │    (MinIO/AWS S3 in VPC/Private Link)       │  │   │
-│  │  └─────────────────────────────────────────────┘  │   │
-│  └─────────────────────────────────────────────────────┘
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "Kubernetes Cluster (Air-gapped)"
+        subgraph "ClickHouse Layer"
+            K[ClickHouse Keeper<br/>Coordinator]
+            S1[ClickHouse Server 1<br/>Compute Node]
+            S2[ClickHouse Server 2<br/>Compute Node]
+        end
+        
+        subgraph "API Layer"
+            REST[REST API]
+            GQL[GraphQL API]
+            ADMIN[Admin API]
+        end
+        
+        subgraph "Storage Layer"
+            S3[S3-Compatible Storage<br/>MinIO/AWS S3]
+        end
+    end
+    
+    K --> S1
+    K --> S2
+    S1 --> S2
+    S1 --> S3
+    S2 --> S3
+    
+    REST --> S1
+    REST --> S2
+    GQL --> S1
+    GQL --> S2
+    ADMIN --> S1
+    ADMIN --> S2
+    
+    style K fill:#f9f,stroke:#333,stroke-width:2px
+    style S1 fill:#bbf,stroke:#333,stroke-width:2px
+    style S2 fill:#bbf,stroke:#333,stroke-width:2px
+    style REST fill:#bfb,stroke:#333,stroke-width:2px
+    style GQL fill:#bfb,stroke:#333,stroke-width:2px
+    style ADMIN fill:#bfb,stroke:#333,stroke-width:2px
+    style S3 fill:#fbb,stroke:#333,stroke-width:2px
 ```
 
 ### Components
@@ -250,6 +262,77 @@ spec:
 
 ## Implementation Steps
 
+### Deployment Flow
+
+```mermaid
+flowchart TD
+    Start[Start Deployment] --> Prep[Pre-deployment Preparation]
+    Prep --> |Load images| Registry[Push to Private Registry]
+    Registry --> |Update dependencies| HelmDep[Helm Dependency Update]
+    HelmDep --> Storage[Deploy Storage Layer]
+    Storage -->Wait1[Wait for Storage Ready]
+    Wait1 --> CH[Deploy ClickHouse Cluster]
+    CH --> Wait2[Wait for ClickHouse Ready]
+    Wait2 --> API[Deploy API Services]
+    API --> Config[Configure Connections]
+    Config --> Monitor[Setup Monitoring]
+    Monitor --> Done[Deployment Complete]
+    
+    Storage -->|Error| Rollback[Rollback Storage]
+    CH -->|Error| RollbackCH[Rollback ClickHouse]
+    API -->|Error| RollbackAPI[Rollback API]
+    
+    Rollback --> End
+    RollbackCH --> End
+    RollbackAPI --> End
+    Done --> End[End]
+    
+    style Start fill:#9f9,stroke:#333,stroke-width:2px
+    style Done fill:#9f9,stroke:#333,stroke-width:2px
+    style Storage fill:#bbf,stroke:#333,stroke-width:2px
+    style CH fill:#bbf,stroke:#333,stroke-width:2px
+    style API fill:#bbf,stroke:#333,stroke-width:2px
+    style Rollback fill:#f99,stroke:#333,stroke-width:2px
+    style RollbackCH fill:#f99,stroke:#333,stroke-width:2px
+    style RollbackAPI fill:#f99,stroke:#333,stroke-width:2px
+```
+
+### Component Interaction Sequence
+
+```mermaid
+sequenceDiagram
+    participant Client as Client Application
+    participant LB as Load Balancer
+    participant API as API Gateway
+    participant CH as ClickHouse Cluster
+    participant S3 as S3 Storage
+    participant Keeper as ClickHouse Keeper
+    
+    Client->>LB: HTTP Request
+    LB->>API: Forward Request
+    API->>API: Authenticate/Validate
+    
+    alt Data Query
+        API->>CH: SQL Query
+        CH->>Keeper: Coordination Check
+        Keeper-->>CH: cluster_state
+        CH->>S3: Retrieve Data
+        S3-->>CH: Data Response
+        CH-->>API: Query Results
+        API-->>Client: JSON Response
+    else Data Write
+        API->>CH: INSERT Statement
+        CH->>Keeper: Distributed Transaction
+       Keeper-->>CH: Transaction ACK
+        CH->>S3: Store Data
+        S3-->>CH: Storage ACK
+        CH-->>API: Write Confirmation
+        API-->>Client: Write Response
+    end
+    
+    Note over CH,S3: Automatic replication and backup
+```
+
 1. **Pre-deployment Preparation**
    ```bash
    # Load images into private registry
@@ -292,6 +375,129 @@ spec:
          username: default
    EOF
    ```
+
+### Network Data Flow
+
+```mermaid
+graph LR
+    subgraph "External Network (Blocked)"
+        EXT[Internet]
+        REMOTE[Remote Services]
+    end
+    
+    subgraph "Air-gapped Kubernetes Cluster"
+        subgraph "Ingress Layer"
+            LB[Load Balancer]
+            INGRESS[Ingress Controller]
+        end
+        
+        subgraph "Application Layer"
+            API[API Services]
+            DASH[Dashboard UI]
+        end
+        
+        subgraph "Data Layer"
+            CH[ClickHouse Cluster]
+            KEEPER[ClickHouse Keeper]
+        end
+        
+        subgraph "Storage Layer"
+            S3[S3-Compatible Storage]
+            CACHE[Local Disk Cache]
+        end
+        
+        subgraph "Monitoring Layer"
+            PROM[Prometheus]
+            GRAF[Grafana]
+            LOG[Logging Stack]
+        end
+    end
+    
+    LB --> INGRESS
+    INGRESS --> API
+    INGRESS --> DASH
+    API --> CH
+    API --> KEEPER
+    CH --> KEEPER
+    CH --> S3
+    CH --> CACHE
+    S3 --> CACHE
+    
+    API --> PROM
+    CH --> PROM
+    S3 --> PROM
+    PROM --> GRAF
+    
+    API --> LOG
+    CH --> LOG
+    S3 --> LOG
+    
+    style EXT fill:#f99,stroke:#333,stroke-width:2px
+    style REMOTE fill:#f99,stroke:#333,stroke-width:2px
+    style LB fill:#bfb,stroke:#333,stroke-width:2px
+    style INGRESS fill:#bfb,stroke:#333,stroke-width:2px
+    style API fill:#bbf,stroke:#333,stroke-width:2px
+    style DASH fill:#bbf,stroke:#333,stroke-width:2px
+    style CH fill:#fbf,stroke:#333,stroke-width:2px
+    style KEEPER fill:#fbf,stroke:#333,stroke-width:2px
+    style S3 fill:#ffb,stroke:#333,stroke-width:2px
+    style CACHE fill:#ffb,stroke:#333,stroke-width:2px
+```
+
+### Security Architecture
+
+```mermaid
+graph TB
+    subgraph "Network Security Layer"
+        NP[Network Policies]
+        NSP[Pod Security Standards]
+        RBAC[RBAC Controls]
+    end
+    
+    subgraph "Authentication Layer"
+        TLS[Mutual TLS]
+        JWT[JWT Tokens]
+        CERT[X.509 Certificates]
+    end
+    
+    subgraph "Data Protection"
+        ENC[Encryption at Rest]
+        TRANS[Encryption in Transit]
+        HASH[Data Integrity]
+    end
+    
+    subgraph "Monitoring & Auditing"
+        AUDIT[Audit Logs]
+        ALERT[Security Alerts]
+        SCAN[Vulnerability Scanning]
+    end
+    
+    NP --> NSP
+    NSP --> RBAC
+    RBAC --> TLS
+    TLS --> JWT
+    JWT --> CERT
+    CERT --> ENC
+    ENC --> TRANS
+    TRANS --> HASH
+    
+    AUDIT --> ALERT
+    ALERT --> SCAN
+    SCAN --> NP
+    
+    style NP fill:#fbb,stroke:#333,stroke-width:2px
+    style NSP fill:#fbb,stroke:#333,stroke-width:2px
+    style RBAC fill:#fbb,stroke:#333,stroke-width:2px
+    style TLS fill:#bbf,stroke:#333,stroke-width:2px
+    style JWT fill:#bbf,stroke:#333,stroke-width:2px
+    style CERT fill:#bbf,stroke:#333,stroke-width:2px
+    style ENC fill:#bfb,stroke:#333,stroke-width:2px
+    style TRANS fill:#bfb,stroke:#333,stroke-width:2px
+    style HASH fill:#bfb,stroke:#333,stroke-width:2px
+    style AUDIT fill:#fbf,stroke:#333,stroke-width:2px
+    style ALERT fill:#fbf,stroke:#333,stroke-width:2px
+    style SCAN fill:#fbf,stroke:#333,stroke-width:2px
+```
 
 ## Monitoring and Observability
 
