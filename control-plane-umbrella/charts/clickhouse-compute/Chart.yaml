@@ -1,0 +1,5 @@
+apiVersion: v2
+name: clickhouse-compute
+version: 0.1.0
+appVersion: "23.8"
+description: Compute-only ClickHouse instance querying S3

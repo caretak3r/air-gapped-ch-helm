@@ -1,0 +1,16 @@
+apiVersion: v2
+name: control-plane-umbrella
+description: Umbrella chart for Control Plane components (Metrics Service, Converter, CH Compute)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: product-metrics
+    version: 0.1.0
+    repository: "file://charts/product-metrics"
+  - name: parquet-converter
+    version: 0.1.0
+    repository: "file://charts/parquet-converter"
+  - name: clickhouse-compute
+    version: 0.1.0
+    repository: "file://charts/clickhouse-compute"

@@ -1,0 +1,17 @@
+image:
+  repository: my-registry/product-metrics
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+replicaCount: 1
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+env: {}

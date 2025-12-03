@@ -1,0 +1,16 @@
+schedule: "*/10 * * * *"
+image:
+  repository: my-registry/parquet-converter
+  tag: latest
+  pullPolicy: IfNotPresent
+restartPolicy: OnFailure
+env:
+  SOURCE_BUCKET: "raw-metrics"
+  DEST_BUCKET: "processed-metrics"
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

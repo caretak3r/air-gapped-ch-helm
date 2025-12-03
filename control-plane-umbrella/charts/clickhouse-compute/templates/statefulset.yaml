@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "clickhouse-compute.fullname" . }}
+  labels:
+    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "clickhouse-compute.fullname" . }}
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "clickhouse-compute.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "clickhouse-compute.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.httpPort }}
+              protocol: TCP
+            - name: tcp
+              containerPort: {{ .Values.service.tcpPort }}
+              protocol: TCP
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/clickhouse-server/config.d/storage.xml
+              subPath: storage.xml
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "clickhouse-compute.fullname" . }}-config

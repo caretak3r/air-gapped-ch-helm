@@ -1,0 +1,38 @@
+global:
+  region: us-east-1
+  environment: production
+
+product-metrics:
+  enabled: true
+  image:
+    repository: my-registry/product-metrics
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  replicaCount: 2
+
+parquet-converter:
+  enabled: true
+  schedule: "*/10 * * * *"
+  image:
+    repository: my-registry/parquet-converter
+    tag: latest
+    pullPolicy: IfNotPresent
+  env:
+    SOURCE_BUCKET: "raw-metrics"
+    DEST_BUCKET: "processed-metrics"
+
+clickhouse-compute:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: clickhouse/clickhouse-server
+    tag: 23.8
+    pullPolicy: IfNotPresent
+  storage:
+    s3:
+      endpoint: https://s3.amazonaws.com
+      bucket: my-metrics-bucket
+      region: us-east-1
