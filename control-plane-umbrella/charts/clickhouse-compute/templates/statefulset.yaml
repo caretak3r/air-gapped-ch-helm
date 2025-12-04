@@ -15,10 +15,22 @@ spec:
       labels:
         {{- include "clickhouse-compute.selectorLabels" . | nindent 8 }}
     spec:
+      serviceAccountName: {{ include "clickhouse-compute.serviceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "clickhouse-compute.fullname" . }}-secrets
+                  key: accessKey
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "clickhouse-compute.fullname" . }}-secrets
+                  key: secretKey
           ports:
             - name: http
               containerPort: {{ .Values.service.httpPort }}

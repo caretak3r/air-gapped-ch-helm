@@ -12,8 +12,8 @@ data:
                 <s3_disk>
                     <type>s3</type>
                     <endpoint>{{ .Values.storage.s3.endpoint }}/{{ .Values.storage.s3.bucket }}/</endpoint>
-                    <access_key_id>{{ .Values.storage.s3.accessKey }}</access_key_id>
-                    <secret_access_key>{{ .Values.storage.s3.secretKey }}</secret_access_key>
+                    <access_key_id from_env="S3_ACCESS_KEY" />
+                    <secret_access_key from_env="S3_SECRET_KEY" />
                     <region>{{ .Values.storage.s3.region }}</region>
                 </s3_disk>
             </disks>

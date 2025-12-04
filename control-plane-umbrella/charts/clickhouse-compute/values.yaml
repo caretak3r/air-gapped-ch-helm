@@ -7,6 +7,20 @@ service:
   type: ClusterIP
   httpPort: 8123
   tcpPort: 9000
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+rbac:
+  create: true
+  # rules: []
+
 storage:
   s3:
     endpoint: "https://s3.us-east-1.amazonaws.com"

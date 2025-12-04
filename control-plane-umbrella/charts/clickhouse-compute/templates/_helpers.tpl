@@ -47,3 +47,14 @@ Selector labels
 app.kubernetes.io/name: {{ include "clickhouse-compute.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "clickhouse-compute.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "clickhouse-compute.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}

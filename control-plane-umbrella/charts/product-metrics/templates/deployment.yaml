@@ -14,6 +14,7 @@ spec:
       labels:
         {{- include "product-metrics.selectorLabels" . | nindent 8 }}
     spec:
+      serviceAccountName: {{ include "product-metrics.serviceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
