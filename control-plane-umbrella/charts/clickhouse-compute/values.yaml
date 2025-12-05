@@ -4,7 +4,7 @@ image:
   tag: 23.8
   pullPolicy: IfNotPresent
 service:
-  type: ClusterIP
+  type: LoadBalancer
   httpPort: 8123
   tcpPort: 9000
 
