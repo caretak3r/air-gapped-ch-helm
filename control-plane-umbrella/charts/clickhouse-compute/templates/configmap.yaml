@@ -9,6 +9,7 @@ data:
     <clickhouse>
         <storage_configuration>
             <disks>
+                {{- if .Values.storage.s3.enabled }}
                 <s3_disk>
                     <type>s3</type>
                     <endpoint>{{ .Values.storage.s3.endpoint }}/{{ .Values.storage.s3.bucket }}/</endpoint>
@@ -16,8 +17,10 @@ data:
                     <secret_access_key from_env="S3_SECRET_KEY" />
                     <region>{{ .Values.storage.s3.region }}</region>
                 </s3_disk>
+                {{- end }}
             </disks>
             <policies>
+                {{- if .Values.storage.s3.enabled }}
                 <s3_main>
                     <volumes>
                         <main>
@@ -25,6 +28,7 @@ data:
                         </main>
                     </volumes>
                 </s3_main>
+                {{- end }}
             </policies>
         </storage_configuration>
     </clickhouse>
