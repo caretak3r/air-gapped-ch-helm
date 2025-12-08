@@ -44,10 +44,6 @@ deployment:
 # -- Pod level annotations
 podAnnotations: {}
 
-# -- Pod level security context
-podSecurityContext: {}
-  # fsGroup: 2000
-
 # -- Container level security context
 securityContext: {}
   # capabilities:
