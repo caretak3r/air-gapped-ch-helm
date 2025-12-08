@@ -1,7 +1,7 @@
 # -- Override name of the chart
-nameOverride: ''
+nameOverride: ""
 # -- Override the full name of the chart
-fullnameOverride: ''
+fullnameOverride: ""
 
 # -- Global configuration shared across charts
 global:

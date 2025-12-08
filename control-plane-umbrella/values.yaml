@@ -1,6 +1,10 @@
 global:
   region: us-east-1
   environment: production
+  # -- Image registry to use for all images
+  imageRegistry: ""
+  # -- List of image pull secrets to use for pulling images from private registries
+  imagePullSecrets: []
 
 product-metrics-query-service-query-service:
   enabled: true
