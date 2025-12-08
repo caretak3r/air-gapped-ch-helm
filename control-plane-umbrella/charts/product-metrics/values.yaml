@@ -3,6 +3,21 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+deployment:
+  annotations: {}
+
+podAnnotations: {}
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
@@ -20,6 +35,11 @@ service:
   type: ClusterIP
   port: 8080
   targetPort: 8080
+  annotations: {}
+
+secrets:
+  annotations: {}
+
 replicaCount: 1
 resources:
   limits:

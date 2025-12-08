@@ -19,7 +19,7 @@ spec:
       name: http
     - port: {{ .Values.service.tcpPort }}
       targetPort: {{ .Values.service.tcpPort }}
-      name: native
+      name: tcp
     {{- if .Values.prometheus.enabled }}
     - port: {{ .Values.prometheus.port }}
       targetPort: {{ .Values.prometheus.port }}

@@ -13,6 +13,21 @@ global:
 
 replicaCount: 1
 
+podAnnotations: {}
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+deployment:
+  annotations: {}
+
 image:
   repository: "clickhouse/clickhouse-server"
   tag: "25.7-alpine"
@@ -96,6 +111,7 @@ persistence:
   enabled: true
   dataSize: 10Gi
   logSize: 5Gi
+  annotations: {}
 
 prometheus:
   enabled: true
@@ -103,6 +119,7 @@ prometheus:
   endpoint: "/metrics"
 
 config:
+  annotations: {} # for ConfigMaps
   users:
     appUserPassword: "password"
   # Network CIDRs for Kubernetes cluster access control
@@ -114,11 +131,17 @@ config:
     - "172.16.0.0/12" # Some cloud providers and Docker Desktop
     - "192.168.0.0/16" # OrbStack, Minikube, and local development
 
+secrets:
+  annotations: {} # for Secrets
 
 tasks:
   enabled: true
   parquetConverter:
     enabled: true
+    podAnnotations: {}
+    podSecurityContext: {}
+    securityContext: {}
+    annotations: {} # for CronJob object
     schedule: "*/10 * * * *"
     image:
       repository: my-registry/parquet-converter

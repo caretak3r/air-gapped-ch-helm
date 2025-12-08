@@ -5,6 +5,10 @@ metadata:
   name: {{ include "clickhouse-compute.fullname" . }}-config
   labels:
     {{- include "clickhouse-compute.labels" . | nindent 4 }}
+  {{- with .Values.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 data:
   config.xml: |-
     {{- tpl (.Files.Get "data/config.xml") . | nindent 4 }}
@@ -16,6 +20,10 @@ metadata:
   name: {{ include "clickhouse-compute.fullname" . }}-users
   labels:
     {{- include "clickhouse-compute.labels" . | nindent 4 }}
+  {{- with .Values.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 data:
   users.xml: |-
     {{- tpl (.Files.Get "data/users.xml") . | nindent 4 }}
@@ -27,6 +35,10 @@ metadata:
   name: {{ include "clickhouse-compute.fullname" . }}-storage
   labels:
     {{- include "clickhouse-compute.labels" . | nindent 4 }}
+  {{- with .Values.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 data:
   storage.xml: |
     <clickhouse>

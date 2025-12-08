@@ -5,6 +5,10 @@ metadata:
   name: {{ include "clickhouse-compute.fullname" . }}-parquet-converter
   labels:
     {{- include "clickhouse-compute.labels" . | nindent 4 }}
+  {{- with .Values.tasks.parquetConverter.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   schedule: {{ .Values.tasks.parquetConverter.schedule | quote }}
   jobTemplate:
@@ -14,13 +18,25 @@ spec:
           labels:
             {{- include "clickhouse-compute.selectorLabels" . | nindent 12 }}
             app.kubernetes.io/component: parquet-converter
+          {{- with .Values.tasks.parquetConverter.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
         spec:
           serviceAccountName: {{ include "clickhouse-compute.serviceAccountName" . }}
+          {{- if .Values.tasks.parquetConverter.podSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.tasks.parquetConverter.podSecurityContext | nindent 12 }}
+          {{- end }}
           restartPolicy: {{ .Values.tasks.parquetConverter.restartPolicy | default "OnFailure" }}
           containers:
             - name: parquet-converter
               image: "{{ .Values.tasks.parquetConverter.image.repository }}:{{ .Values.tasks.parquetConverter.image.tag }}"
               imagePullPolicy: {{ .Values.tasks.parquetConverter.image.pullPolicy }}
+              {{- if .Values.tasks.parquetConverter.securityContext }}
+              securityContext:
+                {{- toYaml .Values.tasks.parquetConverter.securityContext | nindent 16 }}
+              {{- end }}
               resources:
                 {{- toYaml .Values.tasks.parquetConverter.resources | nindent 16 }}
               env:

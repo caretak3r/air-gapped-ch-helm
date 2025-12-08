@@ -6,10 +6,13 @@ metadata:
   name: {{ include "clickhouse-compute.fullname" . }}-data
   labels:
     {{- include "clickhouse-compute.labels" . | nindent 4 }}
-  {{- if .Values.global.keepPVC }}
   annotations:
+    {{- if .Values.global.keepPVC }}
     "helm.sh/resource-policy": keep
-  {{- end }}
+    {{- end }}
+    {{- with .Values.persistence.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -26,10 +29,13 @@ metadata:
   name: {{ include "clickhouse-compute.fullname" . }}-logs
   labels:
     {{- include "clickhouse-compute.labels" . | nindent 4 }}
-  {{- if .Values.global.keepPVC }}
   annotations:
+    {{- if .Values.global.keepPVC }}
     "helm.sh/resource-policy": keep
-  {{- end }}
+    {{- end }}
+    {{- with .Values.persistence.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   accessModes:
     - ReadWriteOnce
