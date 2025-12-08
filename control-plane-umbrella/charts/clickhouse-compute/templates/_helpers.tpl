@@ -58,3 +58,14 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Return the kind of controller to use
+*/}}
+{{- define "clickhouse-compute.controller.kind" -}}
+{{- if .Values.controller.kind }}
+{{- .Values.controller.kind }}
+{{- else }}
+{{- "Deployment" }}
+{{- end }}
+{{- end }}

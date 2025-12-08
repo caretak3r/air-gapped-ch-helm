@@ -1,0 +1,24 @@
+# Example values showing how to configure environment variables
+controller:
+  kind: Deployment
+  replicas: 1
+
+# Environment variables configuration (simple key-value pairs)
+env:
+  # Default timezone (already included)
+  TZ: UTC
+  
+  # Custom ClickHouse settings
+  CLICKHOUSE_LOG_LEVEL: information
+  CLICKHOUSE_MAX_MEMORY_USAGE: "8000000000"
+  CLICKHOUSE_MAX_THREADS: 8
+  
+  # Database settings
+  CLICKHOUSE_DATABASE: my_database
+  
+  # Performance tuning
+  CLICKHOUSE_UNCOMPRESSED_CACHE_SIZE: "8589934592"
+  CLICKHOUSE_MARK_CACHE_SIZE: "5368709120"
+  
+  # For more complex environment variables with valueFrom,
+  # you would need to extend the template to support those structures

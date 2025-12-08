@@ -5,21 +5,37 @@ metadata:
   name: {{ include "clickhouse-compute.fullname" . }}-clickhouse
   labels:
     {{- include "clickhouse-compute.labels" . | nindent 4 }}
-  {{- if .Values.service.annotations }}
-  annotations:
-    {{- with .Values.service.annotations }}
+    {{- with .Values.service.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
+  {{- if .Values.service.annotations }}
+  annotations:
+    {{- toYaml .Values.service.annotations | nindent 4 }}
   {{- end }}
 spec:
   type: {{ .Values.service.type | default "ClusterIP" }}
+  {{- if .Values.service.clusterIP }}
+  clusterIP: {{ .Values.service.clusterIP }}
+  {{- end }}
+  {{- if .Values.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.service.loadBalancerIP }}
+  {{- end }}
+  {{- if .Values.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml .Values.service.loadBalancerSourceRanges | nindent 4 }}
+  {{- end }}
   ports:
-    - port: {{ .Values.service.httpPort }}
-      targetPort: {{ .Values.service.httpPort }}
-      name: http
-    - port: {{ .Values.service.tcpPort }}
-      targetPort: {{ .Values.service.tcpPort }}
-      name: tcp
+    {{- range $key, $val := .Values.ports }}
+    {{- if $val.enabled }}
+    - port: {{ $val.port }}
+      targetPort: {{ $val.port }}
+      name: {{ $key }}
+      {{- if and $.Values.service.type (eq $.Values.service.type "NodePort") $val.nodePort }}
+      nodePort: {{ $val.nodePort }}
+      {{- end }}
+      protocol: {{ default "TCP" $val.protocol }}
+    {{- end }}
+    {{- end }}
     {{- if .Values.prometheus.enabled }}
     - port: {{ .Values.prometheus.port }}
       targetPort: {{ .Values.prometheus.port }}

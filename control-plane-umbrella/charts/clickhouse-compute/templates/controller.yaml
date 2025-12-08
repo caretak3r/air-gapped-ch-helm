@@ -1,19 +1,28 @@
----
+{{- if .Values.controller.enabled -}}
 apiVersion: apps/v1
-kind: Deployment
+kind: {{ include "clickhouse-compute.controller.kind" . }}
 metadata:
   name: {{ include "clickhouse-compute.fullname" . }}-clickhouse
   labels:
     {{- include "clickhouse-compute.labels" . | nindent 4 }}
     app: clickhouse
-  {{- with .Values.deployment.annotations }}
+  {{- with .Values.controller.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  {{- if .Values.controller.replicas }}
+  replicas: {{ .Values.controller.replicas }}
+  {{- else if .Values.deployment.replicaCount }}
   replicas: {{ .Values.deployment.replicaCount }}
+  {{- end }}
+  {{- if eq (include "clickhouse-compute.controller.kind" .) "StatefulSet" }}
+  serviceName: {{ include "clickhouse-compute.fullname" . }}-clickhouse-headless
+  {{- end }}
+  {{- if eq (include "clickhouse-compute.controller.kind" .) "Deployment" }}
   strategy:
     type: Recreate
+  {{- end }}
   selector:
     matchLabels:
       {{- include "clickhouse-compute.selectorLabels" . | nindent 6 }}
@@ -29,6 +38,7 @@ spec:
       {{- end }}
     spec:
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | default 90 }}
+      serviceAccountName: {{ include "clickhouse-compute.serviceAccountName" . }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml .Values.nodeSelector | nindent 8 }}
@@ -54,15 +64,20 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           {{- end }}
           ports:
-            - name: http
-              containerPort: {{ .Values.service.httpPort }}
-              protocol: TCP
-            - name: tcp
-              containerPort: {{ .Values.service.tcpPort }}
-              protocol: TCP
+            {{- range $key, $val := .Values.ports }}
+            {{- if $val.enabled }}
+            - name: {{ $key | quote }}
+              containerPort: {{ $val.port }}
+              protocol: {{ default "TCP" $val.protocol | quote }}
+            {{- end }}
+            {{- end }}
           env:
             - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
               value: "1"
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
           {{- if .Values.resources }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -82,7 +97,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /ping
-              port: {{ .Values.service.httpPort }}
+              port: {{ .Values.ports.rest.port }}
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
@@ -92,7 +107,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /ping
-              port: {{ .Values.service.httpPort }}
+              port: {{ .Values.ports.rest.port }}
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
@@ -102,7 +117,7 @@ spec:
           startupProbe:
             httpGet:
               path: /ping
-              port: {{ .Values.service.httpPort }}
+              port: {{ .Values.ports.rest.port }}
             initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.startupProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
@@ -110,7 +125,7 @@ spec:
           {{- end }}
           volumeMounts:
             - name: config
-              mountPath: /etc/clickhouse-server/config.xml
+              mountPath: /etc/clickhouse-server/config.xml # /etc/clickhouse-server/config.d/
               subPath: config.xml
             - name: users
               mountPath: /etc/clickhouse-server/users.xml
@@ -126,6 +141,7 @@ spec:
         - name: users
           configMap:
             name: {{ include "clickhouse-compute.fullname" . }}-users
+        {{- if eq (include "clickhouse-compute.controller.kind" .) "Deployment" }}
         - name: data
           {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
@@ -140,3 +156,42 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+        {{- end }}
+      {{- if .Values.affinity }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+      {{- end }}
+{{- if eq (include "clickhouse-compute.controller.kind" .) "StatefulSet" }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        {{- if .Values.persistence.annotations }}
+        annotations:
+          {{- toYaml .Values.persistence.annotations | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- if .Values.global.storageClassName }}
+        storageClassName: {{ .Values.global.storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.dataSize }}
+    - metadata:
+        name: logs
+        {{- if .Values.persistence.annotations }}
+        annotations:
+          {{- toYaml .Values.persistence.annotations | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- if .Values.global.storageClassName }}
+        storageClassName: {{ .Values.global.storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.logSize }}
+{{- end }}
+{{- end }}

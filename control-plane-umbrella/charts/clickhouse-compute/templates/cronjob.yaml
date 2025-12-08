@@ -14,6 +14,7 @@ spec:
   schedule: {{ .Values.tasks.parquetConverter.schedule | quote }}
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:

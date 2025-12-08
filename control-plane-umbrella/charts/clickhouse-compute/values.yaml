@@ -1,3 +1,8 @@
+# -- Override name of the chart
+nameOverride: ''
+# -- Override the full name of the chart
+fullnameOverride: ''
+
 # -- Global configuration shared across charts
 global:
   # -- Image registry to use for all images
@@ -10,6 +15,8 @@ global:
   keepPVC: false
 
 image:
+  # -- The registry to pull the image from
+  registry: docker.io
   # -- Docker image repository
   repository: "clickhouse/clickhouse-server"
   # -- Docker image tag
@@ -17,15 +24,20 @@ image:
   # -- Docker image pull policy
   pullPolicy: "Always"
 
-# -- Service Account configuration
-serviceAccount:
-  # -- Specifies whether a service account should be created
-  create: true
-  # -- Annotations to add to the service account
+# -- Controller configuration
+controller:
+  # -- Enable the controller (Deployment or StatefulSet)
+  enabled: true
+  # -- Type of controller to use: Deployment or StatefulSet
+  kind: Deployment
+  # -- Number of replicas for the controller
+  replicas: 1
+  # -- The controller update strategy. Currently only applies to controllers of kind Deployment
+  updateStrategy: {}
+  # -- Additional annotations for the controller object
   annotations: {}
-  # -- The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  # -- Additional labels for the controller object
+  labels: {}
 
 # -- RBAC configuration
 rbac:
@@ -34,13 +46,123 @@ rbac:
   # -- Custom rules to add to the Role
   # rules: []
 
+# -- Deprecated: Use controller configuration instead
 deployment:
-  # -- Number of replicas for the deployment
+  # -- Number of replicas for the deployment (deprecated, use controller.replicas instead)
   replicaCount: 1
-  # -- Deployment level annotations
+  # -- Deployment level annotations (deprecated, use controller.annotations instead)
   annotations: {}
   # -- Restart policy
   restartPolicy: "Always"
+
+# -- Service Account configuration
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- Labels for service account
+  labels: {}
+  # -- The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# -- Service configuration
+service:
+  # -- Create a service for exposing this chart
+  enabled: true
+  # -- Service type
+  type: ClusterIP
+  # -- ClusterIP used if service type is ClusterIP
+  clusterIP: ""
+  # -- LoadBalancerIP if service type is LoadBalancer
+  loadBalancerIP: ""
+  # -- Allowed addresses when service type is LoadBalancer
+  loadBalancerSourceRanges: []
+  # -- HTTP port
+  httpPort: 8123
+  # -- TCP native port
+  tcpPort: 9000
+  # -- Service annotations
+  annotations: {}
+  # -- Service labels
+  labels: {}
+
+# -- Environment variables for the container
+env:
+  # -- Timezone for the container
+  TZ: UTC
+  CLICKHOUSE_DB: "metrics_ingested"
+
+  # -- Additional environment variables
+  # CLICKHOUSE_LOG_LEVEL: debug
+  # CLICKHOUSE_MAX_MEMORY_USAGE: 8000000000
+  # CUSTOM_VAR: custom_value
+
+# -- List of extra arguments for the container
+extraArgs: []
+# - --loglevel warning
+
+# -- Port configuration
+ports:
+  rest:
+    # -- Enable the port inside the Controller and Service objects
+    enabled: true
+    # -- The port used as internal port and cluster-wide port if .service.type == ClusterIP
+    port: 8123
+    # -- The external port used if .service.type == NodePort
+    nodePort: null
+    # -- The protocol used for the service
+    protocol: TCP
+  rpc:
+    # -- Enable the port inside the Controller and Service objects
+    enabled: true
+    # -- The port used as internal port and cluster-wide port if .service.type == ClusterIP
+    port: 9000
+    # -- The external port used if .service.type == NodePort
+    nodePort: null
+    # -- The protocol used for the service
+    protocol: TCP
+
+# -- ConfigMap configuration
+configMap:
+  # -- Create a new config map object
+  create: true
+  # -- Mount path of the config map object
+  mountPath: /etc/config
+  # -- Use an existing config map object
+  existingConfigMap: ""
+  # -- Map of configuration files as strings
+  files: {}
+  # file1.yml: |
+  #   # contents
+  # file2.yml: |
+  #   # contents
+  # -- Additional annotations for the config map object
+  annotations: {}
+  # -- Additional labels for the config map object
+  labels: {}
+
+# -- Persistent Volume Claim configuration
+persistentVolumeClaim:
+  # -- Create a new persistent volume claim object
+  create: true
+  # -- Mount path of the persistent volume claim object
+  mountPath: /var/lib/clickhouse
+  # -- Access mode of the persistent volume claim object
+  accessMode: ReadWriteOnce
+  # -- Volume mode of the persistent volume claim object
+  volumeMode: Filesystem
+  # -- Storage request size for the persistent volume claim object
+  size: 1Gi
+  # -- Storage class name for the persistent volume claim object
+  storageClassName: ""
+  # -- Use an existing persistent volume claim object
+  existingPersistentVolumeClaim: ""
+  # -- Additional annotations for the persistent volume claim object
+  annotations: {}
+  # -- Additional labels for the persistent volume claim object
+  labels: {}
 
 # -- Ingress Configurations
 ingress:
@@ -60,25 +182,12 @@ ingress:
 # -- Pod level annotations
 podAnnotations: {}
 
-# -- Container level security context
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
-
-# -- Service configuration
-service:
-  # -- Service type
-  type: ClusterIP
-  # -- HTTP port
-  httpPort: 8123
-  # -- TCP native port
-  tcpPort: 9000
-  # -- Service annotations
-  annotations: {}
+# -- Pod-level security attributes. More info [here](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#security-context).
+securityContext:
+  fsGroup: 101
+  runAsNonRoot: true
+  runAsGroup: 101
+  runAsUser: 101
 
 # -- Prometheus Exporter configuration
 prometheus:
@@ -101,13 +210,24 @@ resources:
 # -- Node selection constraints
 nodeSelector: {}
 
-# -- Tolerations for pod assignment
-tolerations: []
-
-# -- Affinity settings for pod assignment
+# -- Pod-level affinity. More info [here](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#scheduling).
 affinity: {}
+# nodeAffinity:
+#   requiredDuringSchedulingIgnoredDuringExecution:
+#     nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: kubernetes.io/hostname
+#           operator: In
+#           values:
+#             - my-node-xyz
 
-# -- Persistence configuration for data and logs
+# -- Pod-level tolerations. More info [here](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#scheduling).
+tolerations: []
+# - key: node-role.kubernetes.io/control-plane
+#   operator: Exists
+#   effect: NoSchedule
+
+# -- Persistence configuration for data and logs (legacy, use persistentVolumeClaim instead)
 persistence:
   # -- Enable persistence
   enabled: false
