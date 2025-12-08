@@ -23,6 +23,7 @@ rbac:
 
 storage:
   s3:
+    enabled: true
     endpoint: "https://s3.us-east-1.amazonaws.com"
     bucket: "my-data-bucket"
     region: "us-east-1"
