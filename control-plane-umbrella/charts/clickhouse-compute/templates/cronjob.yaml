@@ -1,0 +1,31 @@
+{{- if and .Values.tasks.enabled .Values.tasks.parquetConverter.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "clickhouse-compute.fullname" . }}-parquet-converter
+  labels:
+    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.tasks.parquetConverter.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "clickhouse-compute.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: parquet-converter
+        spec:
+          serviceAccountName: {{ include "clickhouse-compute.serviceAccountName" . }}
+          restartPolicy: {{ .Values.tasks.parquetConverter.restartPolicy | default "OnFailure" }}
+          containers:
+            - name: parquet-converter
+              image: "{{ .Values.tasks.parquetConverter.image.repository }}:{{ .Values.tasks.parquetConverter.image.tag }}"
+              imagePullPolicy: {{ .Values.tasks.parquetConverter.image.pullPolicy }}
+              resources:
+                {{- toYaml .Values.tasks.parquetConverter.resources | nindent 16 }}
+              env:
+                {{- range $key, $value := .Values.tasks.parquetConverter.env }}
+                - name: {{ $key }}
+                  value: {{ $value | quote }}
+                {{- end }}
+{{- end }}

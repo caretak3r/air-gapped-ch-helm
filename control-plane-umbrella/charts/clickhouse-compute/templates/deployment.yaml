@@ -1,0 +1,122 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "clickhouse-compute.fullname" . }}-clickhouse
+  labels:
+    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+    app: clickhouse
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "clickhouse-compute.selectorLabels" . | nindent 6 }}
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        {{- include "clickhouse-compute.selectorLabels" . | nindent 8 }}
+        app: clickhouse
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | default 90 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: clickhouse
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.service.httpPort }}
+            - containerPort: {{ .Values.service.tcpPort }}
+          env:
+            - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
+              value: "1"
+          {{- if .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    clickhouse-client --query "SYSTEM STOP MERGES" || true
+                    clickhouse-client --query "SYSTEM STOP MOVES" || true
+                    clickhouse-client --query "SYSTEM FLUSH LOGS" || true
+                    sleep 5
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.service.httpPort }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.service.httpPort }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.service.httpPort }}
+            initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/clickhouse-server/config.xml
+              subPath: config.xml
+            - name: users
+              mountPath: /etc/clickhouse-server/users.xml
+              subPath: users.xml
+            - name: data
+              mountPath: /var/lib/clickhouse
+            - name: logs
+              mountPath: /var/log/clickhouse-server
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "clickhouse-compute.fullname" . }}-config
+        - name: users
+          configMap:
+            name: {{ include "clickhouse-compute.fullname" . }}-users
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "clickhouse-compute.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: logs
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "clickhouse-compute.fullname" . }}-logs
+          {{- else }}
+          emptyDir: {}
+          {{- end }}

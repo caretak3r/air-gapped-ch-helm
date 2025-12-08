@@ -1,12 +1,32 @@
+global:
+  imageRegistry: ""
+  # List of image pull secrets to use for pulling images from private registries
+  # This helps avoid rate limiting (429 errors) when pulling from Docker Hub
+  # Example:
+  # imagePullSecrets:
+  #   - name: regcred
+  #   - name: docker-hub-secret
+  imagePullSecrets: []
+  storageClassName: "local-path"
+  # Keep PVCs when uninstalling helm release to preserve data
+  keepPVC: false
+
 replicaCount: 1
+
 image:
-  repository: clickhouse/clickhouse-server
-  tag: 23.8
-  pullPolicy: IfNotPresent
+  repository: "clickhouse/clickhouse-server"
+  tag: "25.7-alpine"
+  pullPolicy: "Always"
+
 service:
-  type: LoadBalancer
+  type: ClusterIP
   httpPort: 8123
   tcpPort: 9000
+  # Service-level annotations (applied to the Kubernetes service resource)
+  annotations: {}
+  # Example service annotations:
+  # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+  # cloud.google.com/load-balancer-type: "Internal"
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -27,8 +47,7 @@ storage:
     endpoint: "https://s3.us-east-1.amazonaws.com"
     bucket: "my-data-bucket"
     region: "us-east-1"
-    accessKey: "change-me"
-    secretKey: "change-me"
+
 resources:
   limits:
     cpu: 2000m
@@ -36,3 +55,82 @@ resources:
   requests:
     cpu: 1000m
     memory: 2Gi
+
+terminationGracePeriodSeconds: 90
+
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 1
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+startupProbe:
+  enabled: true
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 30
+
+# Add nodeSelector and tolerations for clickhouse service
+nodeSelector: {}
+# Example:
+# kubernetes.io/os: linux
+# node-role.kubernetes.io/worker: "true"
+
+tolerations: []
+# Example:
+# - key: "key1"
+#   operator: "Equal"
+#   value: "value1"
+#   effect: "NoSchedule"
+
+persistence:
+  enabled: true
+  dataSize: 10Gi
+  logSize: 5Gi
+
+prometheus:
+  enabled: true
+  port: 9363
+  endpoint: "/metrics"
+
+config:
+  users:
+    appUserPassword: "password"
+  # Network CIDRs for Kubernetes cluster access control
+  # These CIDRs ensure ClickHouse connections are locked down to intra-cluster only
+  # For PRODUCTION: Remove development CIDRs and keep only your cluster's specific CIDR
+  # For DEVELOPMENT: Multiple common CIDRs are included for convenience
+  clusterCidrs:
+    - "10.0.0.0/8" # Most Kubernetes clusters (including GKE, EKS, AKS)
+    - "172.16.0.0/12" # Some cloud providers and Docker Desktop
+    - "192.168.0.0/16" # OrbStack, Minikube, and local development
+
+
+tasks:
+  enabled: true
+  parquetConverter:
+    enabled: true
+    schedule: "*/10 * * * *"
+    image:
+      repository: my-registry/parquet-converter
+      tag: latest
+      pullPolicy: IfNotPresent
+    env:
+      SOURCE_BUCKET: "raw-metrics"
+      DEST_BUCKET: "processed-metrics"
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
