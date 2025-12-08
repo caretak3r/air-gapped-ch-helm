@@ -8,9 +8,6 @@ dependencies:
   - name: product-metrics
     version: 0.1.0
     repository: "file://charts/product-metrics"
-  - name: parquet-converter
-    version: 0.1.0
-    repository: "file://charts/parquet-converter"
   - name: clickhouse-compute
     version: 0.1.0
     repository: "file://charts/clickhouse-compute"

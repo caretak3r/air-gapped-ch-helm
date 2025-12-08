@@ -36,10 +36,14 @@ spec:
       containers:
         - name: clickhouse
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.service.httpPort }}
-            - containerPort: {{ .Values.service.tcpPort }}
+            - name: http
+              containerPort: {{ .Values.service.httpPort }}
+              protocol: TCP
+            - name: tcp
+              containerPort: {{ .Values.service.tcpPort }}
+              protocol: TCP
           env:
             - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
               value: "1"

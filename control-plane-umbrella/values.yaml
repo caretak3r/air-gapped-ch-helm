@@ -13,17 +13,6 @@ product-metrics:
     port: 8080
   replicaCount: 2
 
-parquet-converter:
-  enabled: true
-  schedule: "*/10 * * * *"
-  image:
-    repository: my-registry/parquet-converter
-    tag: latest
-    pullPolicy: IfNotPresent
-  env:
-    SOURCE_BUCKET: "raw-metrics"
-    DEST_BUCKET: "processed-metrics"
-
 clickhouse-compute:
   enabled: true
   replicaCount: 2
@@ -36,3 +25,15 @@ clickhouse-compute:
       endpoint: https://s3.amazonaws.com
       bucket: my-metrics-bucket
       region: us-east-1
+  tasks:
+    enabled: true
+    parquetConverter:
+      enabled: true
+      schedule: "*/10 * * * *"
+      image:
+        repository: my-registry/parquet-converter
+        tag: latest
+        pullPolicy: IfNotPresent
+      env:
+        SOURCE_BUCKET: "raw-metrics"
+        DEST_BUCKET: "processed-metrics"
