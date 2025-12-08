@@ -128,7 +128,7 @@ spec:
               mountPath: /etc/clickhouse-server/config.xml # /etc/clickhouse-server/config.d/
               subPath: config.xml
             - name: users
-              mountPath: /etc/clickhouse-server/users.xml
+              mountPath: /etc/clickhouse-server/users.xml # /etc/clickhouse-server/users.d/
               subPath: users.xml
             - name: data
               mountPath: /var/lib/clickhouse

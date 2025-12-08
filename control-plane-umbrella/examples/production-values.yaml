@@ -1,0 +1,235 @@
+# Example production values for control-plane-umbrella
+# This demonstrates how to use all the new clickhouse-compute features
+
+global:
+  region: us-east-1
+  environment: production
+  # You can set global image registry, secrets, storage class etc.
+  # imageRegistry: "my-registry.com"
+  # storageClassName: "gp3-encrypted"
+  # keepPVC: true
+
+product-metrics:
+  enabled: true
+  image:
+    repository: my-registry/product-metrics
+    tag: v1.2.0
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8080
+  replicaCount: 3
+
+clickhouse-compute:
+  enabled: true
+  
+  # NEW: Choose between Deployment or StatefulSet
+  controller:
+    enabled: true
+    kind: StatefulSet  # Use StatefulSet for production
+    replicas: 3
+    # annotations:
+    #   app.kubernetes.io/managed-by: "helm"
+    # labels:
+    #   team: "data-platform"
+  
+  # UPDATED: Enhanced image configuration
+  image:
+    registry: my-registry.com  # Custom registry
+    repository: clickhouse/clickhouse-server
+    tag: "25.7-alpine"  # Latest stable
+    pullPolicy: Always
+  
+  # UPDATED: Enhanced service configuration
+  service:
+    enabled: true
+    type: ClusterIP
+    # For production with LoadBalancer:
+    # type: LoadBalancer
+    # loadBalancerIP: "EXTERNAL_IP"
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    labels:
+      team: "data-platform"
+  
+  # NEW: Simple key-value environment variables
+  env:
+    TZ: UTC
+    CLICKHOUSE_DB: "metrics_ingested"
+    CLICKHOUSE_LOG_LEVEL: "information"
+    CLICKHOUSE_MAX_MEMORY_USAGE: "8000000000"
+    CLICKHOUSE_MAX_THREADS: 8
+    CLICKHOUSE_MAX_CONNECTIONS: "4096"
+  
+  # NEW: Port configuration
+  ports:
+    rest:
+      enabled: true
+      port: 8123
+    rpc:
+      enabled: true
+      port: 9000
+  
+  # NEW: Service account with IAM role
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT:role/clickhouse-role"
+    name: "clickhouse-sa"
+  
+  # NEW: RBAC configuration
+  rbac:
+    create: true
+    rules:
+      - apiGroups: [""]
+        resources: ["configmaps", "secrets"]
+        verbs: ["get", "list", "watch"]
+  
+  # NEW: Ingress for external access
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    hosts:
+      - host: clickhouse.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: clickhouse-tls
+        hosts:
+          - clickhouse.example.com
+  
+  # NEW: Enhanced persistence configuration
+  persistence:
+    enabled: true
+    dataSize: 100Gi  # Production storage size
+    logSize: 20Gi
+  
+  # NEW: Persistent Volume Claim with production settings
+  persistentVolumeClaim:
+    create: true
+    size: 100Gi
+    storageClassName: "gp3-encrypted"  # Use encrypted GP3
+    annotations:
+      volume.beta.kubernetes.io/storage-class: "gp3-encrypted"
+  
+  # NEW: Prometheus metrics
+  prometheus:
+    enabled: true
+    port: 9363
+  
+  # NEW: Resource limits for production
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+    requests:
+      cpu: 2000m
+      memory: 4Gi
+  
+  # NEW: Node selection for dedicated nodes
+  nodeSelector:
+    node-type: "clickhouse-dedicated"
+    eks.amazonaws.com/nodegroup: "clickhouse-ng"
+  
+  # NEW: Tolerations for dedicated taints
+  tolerations:
+    - key: "clickhouse-dedicated"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+  
+  # NEW: Affinity rules
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - clickhouse-compute
+            topologyKey: kubernetes.io/hostname
+  
+  # UPDATED: S3 storage enabled for production
+  storage:
+    s3:
+      enabled: true
+      endpoint: https://s3.amazonaws.com
+      bucket: my-production-metrics-bucket
+      region: us-east-1
+  
+  # UPDATED: Tasks with full configuration
+  tasks:
+    enabled: true
+    parquetConverter:
+      enabled: true
+      schedule: "*/5 * * * *"  # More frequent in production
+      image:
+        repository: my-registry/parquet-converter
+        tag: v1.1.0
+        pullPolicy: Always
+      env:
+        SOURCE_BUCKET: "raw-metrics"
+        DEST_BUCKET: "processed-metrics"
+        RAW_PREFIX: "incoming"
+        PROCESSED_PREFIX: "processed"
+        ARCHIVE_PREFIX: "archived"
+        LOOKBACK_HOURS: 1.0
+        PARALLEL_WORKERS: "4"
+      resources:
+        limits:
+          cpu: "1000m"
+          memory: "2Gi"
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+  
+  # NEW: Additional ClickHouse configuration
+  config:
+    users:
+      appUserPassword: "secure-password-here"
+    clusterCidrs:
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+      - "192.168.0.0/16"
+      - "100.64.0.0/10"  # EKS VPC range
+  
+  # NEW: Health probes timing for production
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30  # Longer for production
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 3
+  
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 60  # Longer startup time for production
+  
+  # NEW: Additional extras
+  extraArgs:
+    - "--log-level=information"
+    - "--max-memory-usage=8000000000"
+  
+  terminationGracePeriodSeconds: 120  # Longer for graceful shutdown
+  
+  # NEW: Pod annotations for monitoring
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9363"
+    prometheus.io/path: "/metrics"
