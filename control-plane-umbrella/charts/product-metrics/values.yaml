@@ -7,7 +7,7 @@ image:
   # -- Docker image tag
   tag: latest
   # -- Docker image pull policy
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 # -- Service Account configuration
 serviceAccount:

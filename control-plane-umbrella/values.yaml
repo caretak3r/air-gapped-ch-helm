@@ -7,7 +7,7 @@ product-metrics:
   image:
     repository: my-registry/product-metrics
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     type: ClusterIP
     port: 8080
@@ -19,7 +19,7 @@ clickhouse-compute:
   image:
     repository: clickhouse/clickhouse-server
     tag: 23.8
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   storage:
     s3:
       endpoint: https://s3.amazonaws.com
@@ -33,7 +33,7 @@ clickhouse-compute:
       image:
         repository: my-registry/parquet-converter
         tag: latest
-        pullPolicy: IfNotPresent
+        pullPolicy: Always
       env:
         SOURCE_BUCKET: "raw-metrics"
         DEST_BUCKET: "processed-metrics"

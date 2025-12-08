@@ -5,7 +5,7 @@ global:
   # -- List of image pull secrets to use for pulling images from private registries
   imagePullSecrets: []
   # -- Storage class name for PVCs
-  storageClassName: "local-path"
+  storageClassName: ""
   # -- Keep PVCs when uninstalling helm release to preserve data
   keepPVC: false
 
@@ -67,7 +67,7 @@ service:
 # -- Prometheus Exporter configuration
 prometheus:
   # -- Enable Prometheus exporter
-  enabled: true
+  enabled: false
   # -- Prometheus exporter port
   port: 9363
   # -- Prometheus metrics endpoint path
@@ -94,7 +94,7 @@ affinity: {}
 # -- Persistence configuration for data and logs
 persistence:
   # -- Enable persistence
-  enabled: true
+  enabled: false
   # -- Size of data volume
   dataSize: 10Gi
   # -- Size of log volume
@@ -106,10 +106,12 @@ persistence:
 storage:
   s3:
     # -- Enable S3 storage for ClickHouse data
-    enabled: true
+    enabled: false
     endpoint: "https://s3.us-east-1.amazonaws.com"
     bucket: "my-data-bucket"
     region: "us-east-1"
+    annotations: {}
+      # storageclass.kubernetes.io/is-default-class: false
 
 # -- Termination grace period in seconds
 terminationGracePeriodSeconds: 90
@@ -163,7 +165,7 @@ tasks:
     image:
       repository: my-registry/parquet-converter
       tag: latest
-      pullPolicy: IfNotPresent
+      pullPolicy: Always
     # -- Pod level annotations for the cronjob
     podAnnotations: {}
     # -- Container level security context for the cronjob
@@ -171,12 +173,15 @@ tasks:
     # -- Annotations for the CronJob object
     annotations: {}
     env:
-      SOURCE_BUCKET: "raw-metrics"
-      DEST_BUCKET: "processed-metrics"
+      S3_BUCKET: ""
+      RAW_PREFIX: "raw"
+      PROCESSED_PREFIX: "processed"
+      ARCHIVE_PREFIX: "archive"
+      LOOKBACK_HOURS: 0.2
     resources:
       limits:
-        cpu: 500m
-        memory: 512Mi
+        cpu: "500m"
+        memory: "1Gi"
       requests:
-        cpu: 100m
-        memory: 128Mi
+        cpu: "200m"
+        memory: "512Mi"

@@ -3,6 +3,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ include "clickhouse-compute.fullname" . }}-parquet-converter
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "clickhouse-compute.labels" . | nindent 4 }}
   {{- with .Values.tasks.parquetConverter.annotations }}
@@ -11,6 +12,8 @@ metadata:
   {{- end }}
 spec:
   schedule: {{ .Values.tasks.parquetConverter.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       template:
