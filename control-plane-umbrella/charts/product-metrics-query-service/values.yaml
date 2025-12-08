@@ -1,3 +1,8 @@
+# -- Override name of the chart
+nameOverride: ''
+# -- Override the full name of the chart
+fullnameOverride: ''
+
 # -- Global configuration shared across charts
 global:
   # -- Image registry to use for all images
@@ -5,12 +10,9 @@ global:
   # -- List of image pull secrets to use for pulling images from private registries
   imagePullSecrets: []
 
-# -- Number of replicas for the deployment
-replicaCount: 1
-
 image:
   # -- Docker image repository
-  repository: my-registry/product-metrics
+  repository: my-registry/product-metrics-query-service
   # -- Docker image tag
   tag: latest
   # -- Docker image pull policy
@@ -22,6 +24,8 @@ serviceAccount:
   create: true
   # -- Annotations to add to the service account
   annotations: {}
+  # -- Labels for service account
+  labels: {}
   # -- The name of the service account to use.
   name: ""
 
@@ -34,6 +38,8 @@ rbac:
 
 # -- Deployment level annotations
 deployment:
+  # -- Number of replicas for the deployment
+  replicaCount: 1
   annotations: {}
 
 # -- Pod level annotations

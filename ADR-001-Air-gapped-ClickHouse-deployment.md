@@ -69,7 +69,7 @@ control-plane-umbrella/
 ├── Chart.yaml
 ├── values.yaml
 └── charts/
-    ├── product-metrics/      # Golang Service
+    ├── product-metrics-query-service/      # Golang Service
     ├── parquet-converter/    # CronJob
     └── clickhouse-compute/   # CH Server + S3 Config
 ```
@@ -78,8 +78,8 @@ control-plane-umbrella/
 ```yaml
 # Pre-load container images into private registry
 images:
-  product-metrics:
-    repository: private-registry.local/product-metrics
+  product-metrics-query-service:
+    repository: private-registry.local/product-metrics-query-service
     tag: "1.0.0"
   parquet-converter:
     repository: private-registry.local/parquet-converter
@@ -114,9 +114,9 @@ description: Umbrella chart for Control Plane components
 type: application
 version: 1.0.0
 dependencies:
-  - name: product-metrics
+  - name: product-metrics-query-service
     version: 0.1.0
-    repository: "file://charts/product-metrics"
+    repository: "file://charts/product-metrics-query-service"
   - name: parquet-converter
     version: 0.1.0
     repository: "file://charts/parquet-converter"
@@ -131,7 +131,7 @@ global:
   region: us-east-1
   environment: airgapped
 
-product-metrics:
+product-metrics-query-service:
   replicaCount: 2
   image:
     repository: private-repo/metrics

@@ -5,7 +5,7 @@ NAMESPACE="default"
 
 echo "Testing Product Metrics Service..."
 # Start port forward in background
-kubectl port-forward -n $NAMESPACE service/control-plane-product-metrics 8080:8080 > /dev/null 2>&1 &
+kubectl port-forward -n $NAMESPACE service/control-plane-product-metrics-query-service 8080:8080 > /dev/null 2>&1 &
 PID_PM=$!
 sleep 2
 # Check health

@@ -9,10 +9,10 @@ global:
   # storageClassName: "gp3-encrypted"
   # keepPVC: true
 
-product-metrics:
+product-metrics-query-service:
   enabled: true
   image:
-    repository: my-registry/product-metrics
+    repository: my-registry/product-metrics-query-service
     tag: v1.2.0
     pullPolicy: Always
   service:

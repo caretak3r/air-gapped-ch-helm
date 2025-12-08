@@ -2,15 +2,15 @@ global:
   region: us-east-1
   environment: production
 
-product-metrics:
+product-metrics-query-service-query-service:
   enabled: true
   image:
-    repository: my-registry/product-metrics
+    repository: my-registry/product-metrics-query-service
     tag: latest
     pullPolicy: Always
   service:
     type: ClusterIP
-    port: 8080
+    port: 3000
   replicaCount: 2
 
 clickhouse-compute:

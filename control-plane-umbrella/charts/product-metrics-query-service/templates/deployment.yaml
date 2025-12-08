@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "product-metrics.fullname" . }}
+  name: {{ include "product-metrics-query-service.fullname" . }}
   labels:
-    {{- include "product-metrics.labels" . | nindent 4 }}
+    {{- include "product-metrics-query-service.labels" . | nindent 4 }}
   {{- with .Values.deployment.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -12,11 +12,11 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "product-metrics.selectorLabels" . | nindent 6 }}
+      {{- include "product-metrics-query-service.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "product-metrics.selectorLabels" . | nindent 8 }}
+        {{- include "product-metrics-query-service.selectorLabels" . | nindent 8 }}
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
@@ -26,7 +26,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "product-metrics.serviceAccountName" . }}
+      serviceAccountName: {{ include "product-metrics-query-service.serviceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}
           {{- if .Values.securityContext }}

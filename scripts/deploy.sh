@@ -15,5 +15,5 @@ helm upgrade --install $RELEASE_NAME $CHART_PATH \
     --set clickhouse-compute.storage.s3.enabled=false
 
 echo "Deployment triggered. Checking status..."
-kubectl rollout status deployment/control-plane-product-metrics -n $NAMESPACE --timeout=60s
+kubectl rollout status deployment/control-plane-product-metrics-query-service -n $NAMESPACE --timeout=60s
 kubectl get pods -n $NAMESPACE

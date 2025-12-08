@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "product-metrics.fullname" . }}
+  name: {{ include "product-metrics-query-service.fullname" . }}
   labels:
-    {{- include "product-metrics.labels" . | nindent 4 }}
+    {{- include "product-metrics-query-service.labels" . | nindent 4 }}
   {{- with .Values.service.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -16,4 +16,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "product-metrics.selectorLabels" . | nindent 4 }}
+    {{- include "product-metrics-query-service.selectorLabels" . | nindent 4 }}
