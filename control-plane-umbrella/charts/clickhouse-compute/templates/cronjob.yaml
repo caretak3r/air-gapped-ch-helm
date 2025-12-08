@@ -30,7 +30,11 @@ spec:
           restartPolicy: {{ .Values.tasks.parquetConverter.restartPolicy | default "OnFailure" }}
           containers:
             - name: parquet-converter
+              {{- if .Values.global.imageRegistry }}
+              image: "{{ .Values.global.imageRegistry }}/{{ .Values.tasks.parquetConverter.image.repository }}:{{ .Values.tasks.parquetConverter.image.tag }}"
+              {{- else }}
               image: "{{ .Values.tasks.parquetConverter.image.repository }}:{{ .Values.tasks.parquetConverter.image.tag }}"
+              {{- end }}
               imagePullPolicy: {{ .Values.tasks.parquetConverter.image.pullPolicy }}
               {{- if .Values.tasks.parquetConverter.securityContext }}
               securityContext:

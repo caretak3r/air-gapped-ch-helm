@@ -1,3 +1,10 @@
+# -- Global configuration shared across charts
+global:
+  # -- Image registry to use for all images
+  imageRegistry: ""
+  # -- List of image pull secrets to use for pulling images from private registries
+  imagePullSecrets: []
+
 # -- Number of replicas for the deployment
 replicaCount: 1
 

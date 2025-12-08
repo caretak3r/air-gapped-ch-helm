@@ -9,9 +9,6 @@ global:
   # -- Keep PVCs when uninstalling helm release to preserve data
   keepPVC: false
 
-# -- Number of replicas for the deployment
-replicaCount: 1
-
 image:
   # -- Docker image repository
   repository: "clickhouse/clickhouse-server"
@@ -37,9 +34,28 @@ rbac:
   # -- Custom rules to add to the Role
   # rules: []
 
-# -- Deployment level annotations
 deployment:
+  # -- Number of replicas for the deployment
+  replicaCount: 1
+  # -- Deployment level annotations
   annotations: {}
+  # -- Restart policy
+  restartPolicy: "Always"
+
+# -- Ingress Configurations
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+    # - host: "clickhouse.local"
+    #   paths:
+    #     - path: "/"
+    #       pathType: "Prefix"
+  tls: []
+    # - secretName: "clickhouse-tls"
+    #   hosts:
+    #     - "clickhouse.local"
 
 # -- Pod level annotations
 podAnnotations: {}
