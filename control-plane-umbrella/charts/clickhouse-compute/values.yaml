@@ -1,22 +1,54 @@
+# -- Global configuration shared across charts
 global:
+  # -- Image registry to use for all images
   imageRegistry: ""
-  # List of image pull secrets to use for pulling images from private registries
-  # This helps avoid rate limiting (429 errors) when pulling from Docker Hub
-  # Example:
-  # imagePullSecrets:
-  #   - name: regcred
-  #   - name: docker-hub-secret
+  # -- List of image pull secrets to use for pulling images from private registries
   imagePullSecrets: []
+  # -- Storage class name for PVCs
   storageClassName: "local-path"
-  # Keep PVCs when uninstalling helm release to preserve data
+  # -- Keep PVCs when uninstalling helm release to preserve data
   keepPVC: false
 
+# -- Number of replicas for the deployment
 replicaCount: 1
 
+image:
+  # -- Docker image repository
+  repository: "clickhouse/clickhouse-server"
+  # -- Docker image tag
+  tag: "25.7-alpine"
+  # -- Docker image pull policy
+  pullPolicy: "Always"
+
+# -- Service Account configuration
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# -- RBAC configuration
+rbac:
+  # -- Specifies whether RBAC resources should be created
+  create: true
+  # -- Custom rules to add to the Role
+  # rules: []
+
+# -- Deployment level annotations
+deployment:
+  annotations: {}
+
+# -- Pod level annotations
 podAnnotations: {}
+
+# -- Pod level security context
 podSecurityContext: {}
   # fsGroup: 2000
 
+# -- Container level security context
 securityContext: {}
   # capabilities:
   #   drop:
@@ -25,54 +57,68 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-deployment:
-  annotations: {}
-
-image:
-  repository: "clickhouse/clickhouse-server"
-  tag: "25.7-alpine"
-  pullPolicy: "Always"
-
+# -- Service configuration
 service:
+  # -- Service type
   type: ClusterIP
+  # -- HTTP port
   httpPort: 8123
+  # -- TCP native port
   tcpPort: 9000
-  # Service-level annotations (applied to the Kubernetes service resource)
+  # -- Service annotations
   annotations: {}
-  # Example service annotations:
-  # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
-  # cloud.google.com/load-balancer-type: "Internal"
 
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
+# -- Prometheus Exporter configuration
+prometheus:
+  # -- Enable Prometheus exporter
+  enabled: true
+  # -- Prometheus exporter port
+  port: 9363
+  # -- Prometheus metrics endpoint path
+  endpoint: "/metrics"
+
+# -- Compute resources used by the container
+resources:
+  # limits:
+  #   cpu: 2000m
+  #   memory: 4Gi
+  # requests:
+  #   cpu: 1000m
+  #   memory: 2Gi
+
+# -- Node selection constraints
+nodeSelector: {}
+
+# -- Tolerations for pod assignment
+tolerations: []
+
+# -- Affinity settings for pod assignment
+affinity: {}
+
+# -- Persistence configuration for data and logs
+persistence:
+  # -- Enable persistence
+  enabled: true
+  # -- Size of data volume
+  dataSize: 10Gi
+  # -- Size of log volume
+  logSize: 5Gi
+  # -- Annotations for PVCs
   annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
 
-rbac:
-  create: true
-  # rules: []
-
+# -- S3 Storage configuration (tiering)
 storage:
   s3:
+    # -- Enable S3 storage for ClickHouse data
     enabled: true
     endpoint: "https://s3.us-east-1.amazonaws.com"
     bucket: "my-data-bucket"
     region: "us-east-1"
 
-resources:
-  limits:
-    cpu: 2000m
-    memory: 4Gi
-  requests:
-    cpu: 1000m
-    memory: 2Gi
-
+# -- Termination grace period in seconds
 terminationGracePeriodSeconds: 90
 
+# -- Probes configuration
 livenessProbe:
   enabled: true
   initialDelaySeconds: 10
@@ -94,59 +140,40 @@ startupProbe:
   timeoutSeconds: 5
   failureThreshold: 30
 
-# Add nodeSelector and tolerations for clickhouse service
-nodeSelector: {}
-# Example:
-# kubernetes.io/os: linux
-# node-role.kubernetes.io/worker: "true"
+# -- ClickHouse Configuration
+config:
+  # -- Annotations for ConfigMaps
+  annotations: {}
+  users:
+    # -- Password for the 'app' user
+    appUserPassword: "password"
+  # -- Network CIDRs for Kubernetes cluster access control
+  clusterCidrs:
+    - "10.0.0.0/8" # Most Kubernetes clusters
+    - "172.16.0.0/12" # Docker Desktop etc.
+    - "192.168.0.0/16" # Minikube etc.
 
-tolerations: []
-# Example:
-# - key: "key1"
-#   operator: "Equal"
-#   value: "value1"
-#   effect: "NoSchedule"
-
-persistence:
-  enabled: true
-  dataSize: 10Gi
-  logSize: 5Gi
+# -- Secrets configuration
+secrets:
+  # -- Annotations for Secrets
   annotations: {}
 
-prometheus:
-  enabled: true
-  port: 9363
-  endpoint: "/metrics"
-
-config:
-  annotations: {} # for ConfigMaps
-  users:
-    appUserPassword: "password"
-  # Network CIDRs for Kubernetes cluster access control
-  # These CIDRs ensure ClickHouse connections are locked down to intra-cluster only
-  # For PRODUCTION: Remove development CIDRs and keep only your cluster's specific CIDR
-  # For DEVELOPMENT: Multiple common CIDRs are included for convenience
-  clusterCidrs:
-    - "10.0.0.0/8" # Most Kubernetes clusters (including GKE, EKS, AKS)
-    - "172.16.0.0/12" # Some cloud providers and Docker Desktop
-    - "192.168.0.0/16" # OrbStack, Minikube, and local development
-
-secrets:
-  annotations: {} # for Secrets
-
+# -- Scheduled Tasks (CronJobs)
 tasks:
   enabled: true
   parquetConverter:
     enabled: true
-    podAnnotations: {}
-    podSecurityContext: {}
-    securityContext: {}
-    annotations: {} # for CronJob object
     schedule: "*/10 * * * *"
     image:
       repository: my-registry/parquet-converter
       tag: latest
       pullPolicy: IfNotPresent
+    # -- Pod level annotations for the cronjob
+    podAnnotations: {}
+    # -- Container level security context for the cronjob
+    securityContext: {}
+    # -- Annotations for the CronJob object
+    annotations: {}
     env:
       SOURCE_BUCKET: "raw-metrics"
       DEST_BUCKET: "processed-metrics"

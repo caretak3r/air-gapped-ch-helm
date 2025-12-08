@@ -1,15 +1,42 @@
+# -- Number of replicas for the deployment
+replicaCount: 1
+
 image:
+  # -- Docker image repository
   repository: my-registry/product-metrics
+  # -- Docker image tag
   tag: latest
+  # -- Docker image pull policy
   pullPolicy: IfNotPresent
 
+# -- Service Account configuration
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use.
+  name: ""
+
+# -- RBAC configuration
+rbac:
+  # -- Specifies whether RBAC resources should be created
+  create: true
+  # -- Custom rules to add to the Role
+  # rules: []
+
+# -- Deployment level annotations
 deployment:
   annotations: {}
 
+# -- Pod level annotations
 podAnnotations: {}
+
+# -- Pod level security context
 podSecurityContext: {}
   # fsGroup: 2000
 
+# -- Container level security context
 securityContext: {}
   # capabilities:
   #   drop:
@@ -18,29 +45,18 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-rbac:
-  create: true
-  # rules: []
-
+# -- Service configuration
 service:
+  # -- Service type
   type: ClusterIP
+  # -- Service port
   port: 8080
+  # -- Target port in the container
   targetPort: 8080
+  # -- Service annotations
   annotations: {}
 
-secrets:
-  annotations: {}
-
-replicaCount: 1
+# -- Compute resources used by the container
 resources:
   limits:
     cpu: 500m
@@ -48,4 +64,11 @@ resources:
   requests:
     cpu: 100m
     memory: 128Mi
+
+# -- Environment variables
 env: {}
+
+# -- Secrets configuration
+secrets:
+  # -- Annotations for Secrets
+  annotations: {}

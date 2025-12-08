@@ -24,10 +24,6 @@ spec:
           {{- end }}
         spec:
           serviceAccountName: {{ include "clickhouse-compute.serviceAccountName" . }}
-          {{- if .Values.tasks.parquetConverter.podSecurityContext }}
-          securityContext:
-            {{- toYaml .Values.tasks.parquetConverter.podSecurityContext | nindent 12 }}
-          {{- end }}
           restartPolicy: {{ .Values.tasks.parquetConverter.restartPolicy | default "OnFailure" }}
           containers:
             - name: parquet-converter
