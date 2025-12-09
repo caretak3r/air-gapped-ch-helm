@@ -1,0 +1,49 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickstack.fullname" . }}-service-endpoints
+  labels:
+    app.kubernetes.io/name: {{ include "clickstack.name" . }}
+    helm.sh/chart: {{ include "clickstack.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  # List of enabled subcharts
+  enabled-subcharts: |
+    {{- include "global.enabledSubcharts" . | nindent 4 }}
+
+  # Dynamically generate all enabled service endpoints
+  {{- $allEndpoints := include "global.allEndpointsDynamic" . | fromYaml }}
+  {{- range $service, $endpoint := $allEndpoints }}
+  {{- if $endpoint }}
+  {{ $service }}-endpoint: {{ $endpoint | quote }}
+  {{- end }}
+  {{- end }}
+
+  # All endpoints as structured data
+  service-endpoints.yaml: |
+    {{- include "global.allEndpointsDynamic" . | nindent 4 }}
+
+  # Subchart information using .Subcharts
+  subcharts-info.yaml: |
+    {{- range $subchartName, $subchartContext := .Subcharts }}
+    {{- $valuesKey := $subchartName }}
+    {{- if eq $subchartName "clickhouse-compute" }}
+    {{- $valuesKey = "clickhouseCompute" }}
+    {{- end }}
+    {{- if eq $subchartName "product-metrics-query-service-query-service" }}
+    {{- $valuesKey = "pmqs" }}
+    {{- end }}
+    {{ $subchartName }}:
+      chart:
+        name: {{ $subchartContext.Chart.Name }}
+        version: {{ $subchartContext.Chart.Version }}
+        appVersion: {{ $subchartContext.Chart.AppVersion }}
+      enabled: {{ index $.Values $valuesKey | default (dict) | pluck "enabled" | first | default false }}
+      {{- $subchartValues := index $.Values $valuesKey | default (dict) }}
+      {{- if $subchartValues.service }}
+      service:
+        enabled: {{ $subchartValues.service.enabled | default true }}
+      {{- end }}
+    {{- end }}

@@ -1,0 +1,13 @@
+apiVersion: v2
+name: clickstack
+description: Umbrella chart for Control Plane components (Metrics Service, Converter, CH Compute)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: product-metrics-query-service-query-service
+    version: 0.1.0
+    repository: "file://charts/product-metrics-query-service-query-services"
+  - name: clickhouse-compute
+    version: 0.1.0
+    repository: "file://charts/clickhouse-compute"

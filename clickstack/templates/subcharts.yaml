@@ -1,0 +1,8 @@
+{{- range $key, $value := .Subcharts }}
+{{ $key }}:
+  chart:
+    name: {{ $value.Chart.Name }}
+    version: {{ $value.Chart.Version }}
+    appVersion: {{ $value.Chart.AppVersion }}
+  hasValues: true
+{{- end }}

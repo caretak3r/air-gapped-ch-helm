@@ -1,0 +1,96 @@
+# -- Override name of the chart
+nameOverride: ""
+# -- Override the full name of the chart
+fullnameOverride: ""
+
+# -- Global configuration shared across charts
+global:
+  # -- Image registry to use for all images
+  imageRegistry: ""
+  # -- List of image pull secrets to use for pulling images from private registries
+  imagePullSecrets: []
+
+image:
+  # -- Docker image repository
+  repository: my-registry/product-metrics-query-service
+  # -- Docker image tag
+  tag: latest
+  # -- Docker image pull policy
+  pullPolicy: Always
+
+# -- Service Account configuration
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- Labels for service account
+  labels: {}
+  # -- The name of the service account to use.
+  name: ""
+
+# -- RBAC configuration
+rbac:
+  # -- Specifies whether RBAC resources should be created
+  create: true
+  # -- Custom rules to add to the Role
+  # rules: []
+
+# -- Deployment level annotations
+deployment:
+  # -- Number of replicas for the deployment
+  replicaCount: 1
+  annotations: {}
+
+# -- Pod level annotations
+podAnnotations: {}
+
+# -- Container level security context
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# -- Service configuration
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service port
+  port: 80
+  # -- Target port in the container
+  targetPort: 3000
+  # -- Service annotations
+  annotations: {}
+
+# -- Compute resources used by the container
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# -- Environment variables
+env:
+  SECRETS_ROUTER_URL: "" # this will eventually be auto-injected into your service pods
+  CLICKHOUSE_HOST: ""
+  CLICKHOUSE_PORT: ""
+  CLICKHOUSE_USER:
+    valueFrom:
+      secretKeyRef:
+        name: clickhouse-credentials
+        key: user
+  CLICKHOUSE_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: clickhouse-credentials
+        key: password
+
+# -- Secrets configuration
+secrets:
+  # -- Annotations for Secrets
+  annotations: {}

@@ -1,0 +1,68 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickhouse-compute.fullname" . }}-config
+  labels:
+    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+  {{- with .Values.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  config.xml: |-
+    {{- tpl (.Files.Get "data/config.xml") . | nindent 4 }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickhouse-compute.fullname" . }}-users
+  labels:
+    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+  {{- with .Values.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  users.xml: |-
+    {{- tpl (.Files.Get "data/users.xml") . | nindent 4 }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickhouse-compute.fullname" . }}-storage
+  labels:
+    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+  {{- with .Values.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  storage.xml: |
+    <clickhouse>
+        <storage_configuration>
+            <disks>
+                {{- if .Values.storage.s3.enabled }}
+                <s3_disk>
+                    <type>s3</type>
+                    <endpoint>{{ .Values.storage.s3.endpoint }}/{{ .Values.storage.s3.bucket }}/</endpoint>
+                    <use_environment_credentials>true</use_environment_credentials>
+                    <region>{{ .Values.storage.s3.region }}</region>
+                </s3_disk>
+                {{- end }}
+            </disks>
+            <policies>
+                {{- if .Values.storage.s3.enabled }}
+                <s3_main>
+                    <volumes>
+                        <main>
+                            <disk>s3_disk</disk>
+                        </main>
+                    </volumes>
+                </s3_main>
+                {{- end }}
+            </policies>
+        </storage_configuration>
+    </clickhouse>
