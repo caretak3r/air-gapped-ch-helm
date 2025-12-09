@@ -89,10 +89,26 @@ spec:
                   - /bin/sh
                   - -c
                   - |
+                    # Standard ClickHouse shutdown procedures
                     clickhouse-client --query "SYSTEM STOP MERGES" || true
                     clickhouse-client --query "SYSTEM STOP MOVES" || true
                     clickhouse-client --query "SYSTEM FLUSH LOGS" || true
-                    sleep 5
+                    
+                    {{- if .Values.scripts.enabled }}
+                    # Execute SQL scripts from mounted scripts volume
+                    {{- $scriptsFiles := .Values.scripts.files | default (list) }}
+                    {{- $delayBetween := .Values.scripts.delayBetween | default "2" }}
+                    {{- range $script := $scriptsFiles }}
+                    if [ -f "/scripts/{{ $script }}" ]; then
+                      echo "Executing SQL script: {{ $script }}"
+                      clickhouse-client --queries-file "/scripts/{{ $script }}" || echo "Failed to execute {{ $script }}"
+                      sleep {{ $delayBetween }}
+                    fi
+                    {{- end }}
+                    {{- end }}
+                    
+                    # Final sleep before termination
+                    sleep 10
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
@@ -134,6 +150,11 @@ spec:
               mountPath: /var/lib/clickhouse
             - name: logs
               mountPath: /var/log/clickhouse-server
+            {{- if .Values.scripts.enabled }}
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            {{- end }}
       volumes:
         - name: config
           configMap:
@@ -141,6 +162,11 @@ spec:
         - name: users
           configMap:
             name: {{ include "clickhouse.fullname" . }}-users
+        {{- if .Values.scripts.enabled }}
+        - name: scripts
+          configMap:
+            name: {{ include "clickhouse.fullname" . }}-scripts
+        {{- end }}
         {{- if eq (include "clickhouse.controller.kind" .) "Deployment" }}
         - name: data
           {{- if .Values.persistence.enabled }}

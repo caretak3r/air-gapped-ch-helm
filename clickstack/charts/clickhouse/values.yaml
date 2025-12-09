@@ -296,6 +296,15 @@ config:
     - "172.16.0.0/12" # Docker Desktop etc.
     - "192.168.0.0/16" # Minikube etc.
 
+# -- SQL Scripts Configuration
+scripts:
+  # -- Enable SQL script execution during pod termination
+  enabled: false
+  # -- Scripts to execute (order matters)
+  files: []
+  # -- Delay between script executions (in seconds)
+  delayBetween: 2
+
 # -- Secrets configuration
 secrets:
   # -- Annotations for Secrets

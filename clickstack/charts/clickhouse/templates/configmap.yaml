@@ -66,3 +66,24 @@ data:
             </policies>
         </storage_configuration>
     </clickhouse>
+
+{{- if .Values.scripts.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickhouse.fullname" . }}-scripts
+  labels:
+    {{- include "clickhouse.labels" . | nindent 4 }}
+  {{- with .Values.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  {{- range $script := .Values.scripts.files }}
+  {{- if $.Files.Get (printf "data/scripts/%s" $script) }}
+  {{ $script }}: |
+    {{- tpl ($.Files.Get (printf "data/scripts/%s" $script)) . | nindent 4 }}
+  {{- end }}
+  {{- end }}
+{{- end }}
