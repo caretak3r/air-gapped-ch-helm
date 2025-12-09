@@ -3,9 +3,9 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "clickhouse-compute.fullname" . }}-data
+  name: {{ include "clickhouse.fullname" . }}-data
   labels:
-    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+    {{- include "clickhouse.labels" . | nindent 4 }}
   annotations:
     {{- if .Values.global.keepPVC }}
     "helm.sh/resource-policy": keep
@@ -26,9 +26,9 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "clickhouse-compute.fullname" . }}-logs
+  name: {{ include "clickhouse.fullname" . }}-logs
   labels:
-    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+    {{- include "clickhouse.labels" . | nindent 4 }}
   annotations:
     {{- if .Values.global.keepPVC }}
     "helm.sh/resource-policy": keep

@@ -2,9 +2,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "product-metrics-query-service.fullname" . }}
+  name: {{ include "clickhouse.fullname" . }}
   labels:
-    {{- include "product-metrics-query-service.labels" . | nindent 4 }}
+    {{- include "clickhouse.labels" . | nindent 4 }}
 rules:
   {{- if .Values.rbac.rules }}
   {{- toYaml .Values.rbac.rules | nindent 2 }}
@@ -15,15 +15,15 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "product-metrics-query-service.fullname" . }}
+  name: {{ include "clickhouse.fullname" . }}
   labels:
-    {{- include "product-metrics-query-service.labels" . | nindent 4 }}
+    {{- include "clickhouse.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "product-metrics-query-service.serviceAccountName" . }}
+    name: {{ include "clickhouse.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
-  name: {{ include "product-metrics-query-service.fullname" . }}
+  name: {{ include "clickhouse.fullname" . }}
   apiGroup: rbac.authorization.k8s.io
 {{- end }}

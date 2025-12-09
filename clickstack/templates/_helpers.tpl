@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "clickstack.name" -}}
+{{- define "control-plane.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "clickstack.fullname" -}}
+{{- define "control-plane.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "clickstack.chart" -}}
+{{- define "control-plane.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "clickstack.labels" -}}
-helm.sh/chart: {{ include "clickstack.chart" . }}
-{{ include "clickstack.selectorLabels" . }}
+{{- define "control-plane.labels" -}}
+helm.sh/chart: {{ include "control-plane.chart" . }}
+{{ include "control-plane.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "clickstack.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "clickstack.name" . }}
+{{- define "control-plane.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "control-plane.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "clickstack.serviceAccountName" -}}
+{{- define "control-plane.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "clickstack.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "control-plane.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
@@ -69,11 +69,11 @@ These make subchart endpoints available throughout the umbrella chart
 {{/*
 ClickHouse Compute Service Endpoint
 */}}
-{{- define "global.clickhouseComputeEndpoint" -}}
-{{- $subchart := .Values.clickhouseCompute -}}
+{{- define "global.clickhouseEndpoint" -}}
+{{- $subchart := .Values.clickhouse -}}
 {{- if $subchart.enabled -}}
-{{- $context := dict "Values" $subchart "Release" .Release "Chart" (dict "Name" "clickhouse-compute" "Version" "0.1.0") -}}
-{{- include "clickhouse-compute.endpoint" $context -}}
+{{- $context := dict "Values" $subchart "Release" .Release "Chart" (dict "Name" "clickhouse" "Version" "0.1.0") -}}
+{{- include "clickhouse.endpoint" $context -}}
 {{- else -}}
 {{- "" -}}
 {{- end -}}
@@ -104,12 +104,12 @@ Dynamically generate endpoints for all enabled subcharts using .Subcharts
 {{- range $subchartName, $subchartContext := .Subcharts -}}
   {{- $valuesKey := $subchartName -}}
   {{- $endpointHelperName := printf "%s.endpoint" $subchartName -}}
-  {{- if eq $subchartName "clickhouse-compute" -}}
-  {{- $valuesKey = "clickhouseCompute" -}}
+  {{- if eq $subchartName "clickhouse" -}}
+  {{- $valuesKey = "clickhouse" -}}
   {{- end -}}
-  {{- if eq $subchartName "product-metrics-query-service-query-service" -}}
+  {{- if eq $subchartName "pmqs" -}}
   {{- $valuesKey = "pmqs" -}}
-  {{- $endpointHelperName = "product-metrics-query-service.endpoint" -}}
+  {{- $endpointHelperName = "pmqs.endpoint" -}}
   {{- end -}}
   {{- $subchartValues := index $.Values $valuesKey -}}
   {{- if and $subchartValues $subchartValues.enabled -}}
@@ -134,10 +134,10 @@ Get enabled subcharts dynamically
 {{- $enabledCharts := list -}}
 {{- range $subchartName, $subchartContext := .Subcharts -}}
   {{- $valuesKey := $subchartName -}}
-  {{- if eq $subchartName "clickhouse-compute" -}}
-  {{- $valuesKey = "clickhouseCompute" -}}
+  {{- if eq $subchartName "clickhouse" -}}
+  {{- $valuesKey = "clickhouse" -}}
   {{- end -}}
-  {{- if eq $subchartName "product-metrics-query-service-query-service" -}}
+  {{- if eq $subchartName "pmqs" -}}
   {{- $valuesKey = "pmqs" -}}
   {{- end -}}
   {{- $subchartValues := index $.Values $valuesKey -}}

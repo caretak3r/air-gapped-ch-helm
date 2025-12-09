@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "clickstack.fullname" . }}-service-endpoints
+  name: {{ include "control-plane.fullname" . }}-service-endpoints
   labels:
-    app.kubernetes.io/name: {{ include "clickstack.name" . }}
-    helm.sh/chart: {{ include "clickstack.chart" . }}
+    app.kubernetes.io/name: {{ include "control-plane.name" . }}
+    helm.sh/chart: {{ include "control-plane.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 data:
@@ -29,10 +29,10 @@ data:
   subcharts-info.yaml: |
     {{- range $subchartName, $subchartContext := .Subcharts }}
     {{- $valuesKey := $subchartName }}
-    {{- if eq $subchartName "clickhouse-compute" }}
-    {{- $valuesKey = "clickhouseCompute" }}
+    {{- if eq $subchartName "clickhouse" }}
+    {{- $valuesKey = "clickhouse" }}
     {{- end }}
-    {{- if eq $subchartName "product-metrics-query-service-query-service" }}
+    {{- if eq $subchartName "pmqs" }}
     {{- $valuesKey = "pmqs" }}
     {{- end }}
     {{ $subchartName }}:

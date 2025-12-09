@@ -1,14 +1,16 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "clickhouse-compute.name" -}}
+{{- define "pmqs.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
 */}}
-{{- define "clickhouse-compute.fullname" -}}
+{{- define "pmqs.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,16 +26,16 @@ Create a default fully qualified app name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "clickhouse-compute.chart" -}}
+{{- define "pmqs.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "clickhouse-compute.labels" -}}
-helm.sh/chart: {{ include "clickhouse-compute.chart" . }}
-{{ include "clickhouse-compute.selectorLabels" . }}
+{{- define "pmqs.labels" -}}
+helm.sh/chart: {{ include "pmqs.chart" . }}
+{{ include "pmqs.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -43,43 +45,32 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "clickhouse-compute.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "clickhouse-compute.name" . }}
+{{- define "pmqs.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "pmqs.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "clickhouse-compute.serviceAccountName" -}}
+{{- define "pmqs.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "clickhouse-compute.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "pmqs.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
 {{/*
-Return the kind of controller to use
-*/}}
-{{- define "clickhouse-compute.controller.kind" -}}
-{{- if .Values.controller.kind }}
-{{- .Values.controller.kind }}
-{{- else }}
-{{- "Deployment" }}
-{{- end }}
-{{- end }}
-
-{{/*
-Return the service FQDN with port for clickhouse service
-Usage: {{ include "clickhouse-compute.endpoint" . }}
-Returns: clickhouse-compute-clickhouse.namespace.svc.cluster.local:8123
+Return the service FQDN with port for pmqs
+Usage: {{ include "pmqs.endpoint" . }}
+Returns: pmqs.namespace.svc.cluster.local:80
 This helper can be called from other charts like:
-{{ include "clickhouse-compute.endpoint" .Values.clickhouse-compute }}
+{{ include "pmqs.endpoint" .Values.pmqs }}
 */}}
-{{- define "clickhouse-compute.endpoint" -}}
+{{- define "pmqs.endpoint" -}}
 {{- if .Values.service.enabled -}}
-{{- $serviceName := printf "%s-clickhouse" (include "clickhouse-compute.fullname" .) -}}
-{{- printf "%s.%s.svc.cluster.local:8123" $serviceName .Release.Namespace -}}
+{{- $serviceName := include "pmqs.fullname" . -}}
+{{- printf "%s.%s.svc.cluster.local:%.0f" $serviceName .Release.Namespace .Values.service.port -}}
 {{- end -}}
 {{- end }}

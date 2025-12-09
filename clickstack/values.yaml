@@ -18,7 +18,7 @@ pmqs:
     port: 3000
   replicaCount: 2
 
-clickhouseCompute:
+clickhouse:
   enabled: true
   
   # Controller Configuration - NEW

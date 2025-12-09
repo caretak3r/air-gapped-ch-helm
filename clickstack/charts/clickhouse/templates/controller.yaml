@@ -1,10 +1,10 @@
 {{- if .Values.controller.enabled -}}
 apiVersion: apps/v1
-kind: {{ include "clickhouse-compute.controller.kind" . }}
+kind: {{ include "clickhouse.controller.kind" . }}
 metadata:
-  name: {{ include "clickhouse-compute.fullname" . }}-clickhouse
+  name: {{ include "clickhouse.fullname" . }}-clickhouse
   labels:
-    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+    {{- include "clickhouse.labels" . | nindent 4 }}
     app: clickhouse
   {{- with .Values.controller.annotations }}
   annotations:
@@ -16,21 +16,21 @@ spec:
   {{- else if .Values.deployment.replicaCount }}
   replicas: {{ .Values.deployment.replicaCount }}
   {{- end }}
-  {{- if eq (include "clickhouse-compute.controller.kind" .) "StatefulSet" }}
-  serviceName: {{ include "clickhouse-compute.fullname" . }}-clickhouse-headless
+  {{- if eq (include "clickhouse.controller.kind" .) "StatefulSet" }}
+  serviceName: {{ include "clickhouse.fullname" . }}-clickhouse-headless
   {{- end }}
-  {{- if eq (include "clickhouse-compute.controller.kind" .) "Deployment" }}
+  {{- if eq (include "clickhouse.controller.kind" .) "Deployment" }}
   strategy:
     type: Recreate
   {{- end }}
   selector:
     matchLabels:
-      {{- include "clickhouse-compute.selectorLabels" . | nindent 6 }}
+      {{- include "clickhouse.selectorLabels" . | nindent 6 }}
       app: clickhouse
   template:
     metadata:
       labels:
-        {{- include "clickhouse-compute.selectorLabels" . | nindent 8 }}
+        {{- include "clickhouse.selectorLabels" . | nindent 8 }}
         app: clickhouse
       {{- with .Values.podAnnotations }}
       annotations:
@@ -38,7 +38,7 @@ spec:
       {{- end }}
     spec:
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | default 90 }}
-      serviceAccountName: {{ include "clickhouse-compute.serviceAccountName" . }}
+      serviceAccountName: {{ include "clickhouse.serviceAccountName" . }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml .Values.nodeSelector | nindent 8 }}
@@ -137,22 +137,22 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "clickhouse-compute.fullname" . }}-config
+            name: {{ include "clickhouse.fullname" . }}-config
         - name: users
           configMap:
-            name: {{ include "clickhouse-compute.fullname" . }}-users
-        {{- if eq (include "clickhouse-compute.controller.kind" .) "Deployment" }}
+            name: {{ include "clickhouse.fullname" . }}-users
+        {{- if eq (include "clickhouse.controller.kind" .) "Deployment" }}
         - name: data
           {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "clickhouse-compute.fullname" . }}-data
+            claimName: {{ include "clickhouse.fullname" . }}-data
           {{- else }}
           emptyDir: {}
           {{- end }}
         - name: logs
           {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "clickhouse-compute.fullname" . }}-logs
+            claimName: {{ include "clickhouse.fullname" . }}-logs
           {{- else }}
           emptyDir: {}
           {{- end }}
@@ -161,7 +161,7 @@ spec:
       affinity:
         {{- toYaml .Values.affinity | nindent 8 }}
       {{- end }}
-{{- if eq (include "clickhouse-compute.controller.kind" .) "StatefulSet" }}
+{{- if eq (include "clickhouse.controller.kind" .) "StatefulSet" }}
   volumeClaimTemplates:
     - metadata:
         name: data

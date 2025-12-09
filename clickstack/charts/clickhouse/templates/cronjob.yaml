@@ -2,10 +2,10 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "clickhouse-compute.fullname" . }}-parquet-converter
+  name: {{ include "clickhouse.fullname" . }}-parquet-converter
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+    {{- include "clickhouse.labels" . | nindent 4 }}
   {{- with .Values.tasks.parquetConverter.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -20,14 +20,14 @@ spec:
       template:
         metadata:
           labels:
-            {{- include "clickhouse-compute.selectorLabels" . | nindent 12 }}
+            {{- include "clickhouse.selectorLabels" . | nindent 12 }}
             app.kubernetes.io/component: parquet-converter
           {{- with .Values.tasks.parquetConverter.podAnnotations }}
           annotations:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         spec:
-          serviceAccountName: {{ include "clickhouse-compute.serviceAccountName" . }}
+          serviceAccountName: {{ include "clickhouse.serviceAccountName" . }}
           restartPolicy: {{ .Values.tasks.parquetConverter.restartPolicy | default "OnFailure" }}
           containers:
             - name: parquet-converter

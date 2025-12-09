@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "clickhouse-compute.fullname" . }}-config
+  name: {{ include "clickhouse.fullname" . }}-config
   labels:
-    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+    {{- include "clickhouse.labels" . | nindent 4 }}
   {{- with .Values.config.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -17,9 +17,9 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "clickhouse-compute.fullname" . }}-users
+  name: {{ include "clickhouse.fullname" . }}-users
   labels:
-    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+    {{- include "clickhouse.labels" . | nindent 4 }}
   {{- with .Values.config.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -32,9 +32,9 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "clickhouse-compute.fullname" . }}-storage
+  name: {{ include "clickhouse.fullname" . }}-storage
   labels:
-    {{- include "clickhouse-compute.labels" . | nindent 4 }}
+    {{- include "clickhouse.labels" . | nindent 4 }}
   {{- with .Values.config.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
