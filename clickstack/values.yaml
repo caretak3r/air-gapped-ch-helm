@@ -12,6 +12,7 @@ global:
 
 pmqs:
   enabled: true
+  replicaCount: 1
   image:
     repository: my-registry/product-metrics-query-service
     tag: latest
@@ -20,7 +21,6 @@ pmqs:
     enabled: true
     type: ClusterIP
     port: 3000
-  replicaCount: 2
 
 clickhouse:
   enabled: true
@@ -29,7 +29,7 @@ clickhouse:
   controller:
     enabled: true
     kind: Deployment  # Can be Deployment or StatefulSet
-    replicas: 2
+    replicas: 1
     updateStrategy: {}
     annotations: {}
     labels: {}
