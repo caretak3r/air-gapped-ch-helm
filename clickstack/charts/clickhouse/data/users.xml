@@ -22,28 +22,16 @@
             </networks>
             <quota>default</quota>
         </default>
-        <app>
-            <password>{{ .Values.config.users.appUserPassword }}</password>
-            <networks>
-                {{- if .Values.config.clusterCidrs }}
-                {{- range .Values.config.clusterCidrs }}
-                <ip>{{ . }}</ip>
-                {{- end }}
-                {{- else }}
-                <ip>10.0.0.0/8</ip>  <!-- Default fallback -->
-                {{- end }}
-                <host_regexp>.*\.svc\.cluster\.local$</host_regexp>
-            </networks>
-            <profile>readonly</profile>
-            <quota>default</quota>
-            <grants>
-                <query>GRANT SHOW ON *.*</query>
-                <query>GRANT SELECT ON system.*</query>
-                <query>GRANT SELECT ON default.*</query>
-            </grants>
-        </app>
-        <{{ .Values.config.users.otelUserName }}>
-            <password>{{ .Values.config.users.otelUserPassword }}</password>
+        {{- $effectiveUsername := include "clickhouse.effectiveUsername" . }}
+        {{- $effectivePassword := include "clickhouse.effectivePassword" . }}
+        {{- $useExternalSecret := include "clickhouse.useExternalSecret" . }}
+        <!-- Always create an app user for application access -->
+        <{{ if eq $effectiveUsername "default" }}app{{ else }}{{ $effectiveUsername }}{{ end }}>
+            {{- if and (eq $useExternalSecret "true") (not (eq $effectiveUsername "default")) }}
+            <!-- Password will be loaded from external secret -->
+            {{- else }}
+            <password>{{ $effectivePassword }}</password>
+            {{- end }}
             <networks>
                 {{- if .Values.config.clusterCidrs }}
                 {{- range .Values.config.clusterCidrs }}
@@ -57,9 +45,12 @@
             <profile>default</profile>
             <quota>default</quota>
             <grants>
+                <query>GRANT SHOW ON *.*</query>
+                <query>GRANT SELECT ON system.*</query>
+                <query>GRANT SELECT ON default.*</query>
                 <query>GRANT SELECT,INSERT,CREATE,SHOW ON default.*</query>
             </grants>
-        </{{ .Values.config.users.otelUserName }}>
+        </{{ if eq $effectiveUsername "default" }}app{{ else }}{{ $effectiveUsername }}{{ end }}>
     </users>
 
     <quotas>

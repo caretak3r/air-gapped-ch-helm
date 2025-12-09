@@ -5,6 +5,10 @@ global:
   imageRegistry: ""
   # -- List of image pull secrets to use for pulling images from private registries
   imagePullSecrets: []
+  # -- Secret references for external secrets
+  secrets:
+    # -- External secret name containing ClickHouse credentials
+    clickhouseCredentials: ""
 
 pmqs:
   enabled: true

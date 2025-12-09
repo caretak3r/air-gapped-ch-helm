@@ -286,8 +286,10 @@ config:
   # -- Annotations for ConfigMaps
   annotations: {}
   users:
-    # -- Password for the 'app' user
-    appUserPassword: "password"
+    # -- Username for the app user (overrides global.secrets.clickhouse-credentials)
+    username: ""
+    # -- Password for the app user (overrides global.secrets.clickhouse-credentials)
+    password: ""
   # -- Network CIDRs for Kubernetes cluster access control
   clusterCidrs:
     - "10.0.0.0/8" # Most Kubernetes clusters

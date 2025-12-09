@@ -50,3 +50,23 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
+            {{- $globalSecret := .Values.global.secrets.clickhouseCredentials | default "" }}
+            {{- if $globalSecret }}
+            - name: CLICKHOUSE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $globalSecret }}
+                  key: username
+                  optional: true
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $globalSecret }}
+                  key: password
+                  optional: true
+            {{- else }}
+            - name: CLICKHOUSE_USERNAME
+              value: "default"
+            - name: CLICKHOUSE_PASSWORD
+              value: "password"
+            {{- end }}

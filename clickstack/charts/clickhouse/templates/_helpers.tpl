@@ -83,3 +83,46 @@ This helper can be called from other charts like:
 {{- printf "%s.%s.svc.cluster.local:8123" $serviceName .Release.Namespace -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+Get the effective username for ClickHouse app user
+Priority: 
+1. clickhouse.config.users.username (if set)
+2. global.secrets.clickhouse-credentials.username (if secret exists)
+3. "default" (fallback)
+*/}}
+{{- define "clickhouse.effectiveUsername" -}}
+{{- if .Values.config.users.username -}}
+{{ .Values.config.users.username }}
+{{- else if .Values.global.secrets.clickhouseCredentials -}}
+{{ "default" }}
+{{- else -}}
+{{ "default" }}
+{{- end -}}
+{{- end }}
+
+{{/*
+Get the effective password for ClickHouse app user  
+Priority: 
+1. clickhouse.config.users.password (if set)
+2. global.secrets.clickhouseCredentials.password (if secret exists)
+3. clickhouse.config.users.appUserPassword (fallback)
+*/}}
+{{- define "clickhouse.effectivePassword" -}}
+{{- if .Values.config.users.password -}}
+{{ .Values.config.users.password }}
+{{- else -}}
+{{ .Values.config.users.appUserPassword }}
+{{- end -}}
+{{- end }}
+
+{{/*
+Check if we should use external secret for credentials
+*/}}
+{{- define "clickhouse.useExternalSecret" -}}
+{{- if and .Values.global.secrets.clickhouseCredentials (not .Values.config.users.username) (not .Values.config.users.password) }}
+{{ "true" }}
+{{- else }}
+{{ "false" }}
+{{- end }}
+{{- end }}
