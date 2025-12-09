@@ -8,6 +8,6 @@ dependencies:
   - name: pmqs
     version: 0.1.0
     repository: "file://charts/pmqs"
-  - name: clickhouse
+  - name: clickhouse-operator
     version: 0.1.0
-    repository: "file://charts/clickhouse"
+    repository: "file://charts/clickhouse-operator"

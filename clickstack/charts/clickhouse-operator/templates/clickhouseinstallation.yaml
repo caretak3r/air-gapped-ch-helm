@@ -1,0 +1,161 @@
+apiVersion: clickhouse.altinity.com/v1
+kind: ClickHouseInstallation
+metadata:
+  name: {{ include "clickhouse-operator.fullname" . }}
+  labels:
+    {{- include "clickhouse-operator.labels" . | nindent 4 }}
+spec:
+  configuration:
+    users:
+      {{- range .Values.clickhouse.users }}
+      {{- .name }}/password_sha256_hex: ""
+      {{- .name }}/profile: default
+      {{- .name }}/quota: default
+      {{- .name }}/networks/ip:
+        {{- range .hostIP }}
+        - {{ . }}
+        {{- end }}
+      {{- .name }}/grants:
+        {{- range .grants }}
+        - {{ . }}
+        {{- end }}
+      {{- if .accessManagement }}
+      {{- .name }}/access_management: {{ .accessManagement }}
+      {{- end }}
+      {{- end }}
+    
+    settings:
+      {{ .Values.clickhouse.extraConfig | nindent 6 }}
+  
+  defaultUser:
+    password: {{ .Values.clickhouse.defaultUser.password }}
+    allowExternalAccess: {{ .Values.clickhouse.defaultUser.allowExternalAccess }}
+    {{- if .Values.clickhouse.defaultUser.hostIP }}
+    hostIP: {{ .Values.clickhouse.defaultUser.hostIP }}
+    {{- end }}
+  
+  {{- if .Values.clickhouse.initScripts.enabled }}
+  templates:
+    podTemplates:
+      - name: clickhouse-pod-template
+        template:
+          spec:
+            initContainers:
+              - name: init-scripts
+                image: clickhouse/clickhouse-server:{{ .Values.clickhouse.image.tag }}
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    # Wait for ClickHouse to be ready
+                    echo "Waiting for ClickHouse..."
+                    while ! clickhouse-client --query "SELECT 1" >/dev/null 2>&1; do
+                      sleep 2
+                    done
+                    echo "ClickHouse is ready. Running init scripts..."
+                    
+                    # Run all scripts from ConfigMap
+                    for script in /docker-entrypoint-initdb.d/*.sh; do
+                      if [ -f "$script" ]; then
+                        echo "Running $script"
+                        bash "$script"
+                      fi
+                    done
+                
+                volumeMounts:
+                  - name: init-scripts
+                    mountPath: /docker-entrypoint-initdb.d
+                    readOnly: true
+            volumes:
+              - name: init-scripts
+                configMap:
+                  name: {{ .Values.clickhouse.initScripts.configMapName }}
+                  defaultMode: 0755
+  {{- end }}
+  
+  {{- if .Values.clickhouse.serviceAccount.name }}
+  serviceAccount:
+    name: {{ .Values.clickhouse.serviceAccount.name }}
+  {{- end }}
+  
+  pods:
+    - name: clickhouse
+      {{- if .Values.clickhouse.image }}
+      image:
+        repository: {{ .Values.clickhouse.image.repository }}
+        tag: {{ .Values.clickhouse.image.tag }}
+        pullPolicy: {{ .Values.clickhouse.image.pullPolicy }}
+      {{- end }}
+      
+      replicasCount: {{ .Values.clickhouse.replicasCount }}
+      
+      {{- if .Values.clickhouse.resources }}
+      resources:
+        {{- toYaml .Values.clickhouse.resources | nindent 8 }}
+      {{- end }}
+      
+      {{- if .Values.clickhouse.persistence.enabled }}
+      volumeClaimTemplates:
+        - name: data
+          {{- if .Values.global.storageClassName }}
+          storageClassName: {{ .Values.global.storageClassName }}
+          {{- end }}
+          accessModes:
+            - {{ .Values.clickhouse.persistence.accessMode }}
+          resources:
+            requests:
+              storage: {{ .Values.clickhouse.persistence.size }}
+        {{- if .Values.clickhouse.persistence.logs.enabled }}
+        - name: logs
+          {{- if .Values.global.storageClassName }}
+          storageClassName: {{ .Values.global.storageClassName }}
+          {{- end }}
+          accessModes:
+            - {{ .Values.clickhouse.persistence.logs.accessMode }}
+          resources:
+            requests:
+              storage: {{ .Values.clickhouse.persistence.logs.size }}
+        {{- end }}
+      {{- end }}
+      
+      {{- if .Values.clickhouse.serviceAccount.annotations }}
+      serviceAccountName: {{ include "clickhouse-operator.serviceAccountName" . }}
+      {{- end }}
+      
+      {{- if .Values.clickhouse.podAnnotations }}
+      podAnnotations:
+        {{- toYaml .Values.clickhouse.podAnnotations | nindent 8 }}
+      {{- end }}
+      
+      {{- if .Values.clickhouse.podLabels }}
+      podLabels:
+        {{- toYaml .Values.clickhouse.podLabels | nindent 8 }}
+      {{- end }}
+      
+      {{- if .Values.clickhouse.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.clickhouse.nodeSelector | nindent 8 }}
+      {{- end }}
+      
+      {{- if .Values.clickhouse.tolerations }}
+      tolerations:
+        {{- toYaml .Values.clickhouse.tolerations | nindent 8 }}
+      {{- end }}
+      
+      {{- if .Values.clickhouse.affinity }}
+      affinity:
+        {{- toYaml .Values.clickhouse.affinity | nindent 8 }}
+      {{- end }}
+      
+      {{- if .Values.clickhouse.extraPorts }}
+      ports:
+        {{- range .Values.clickhouse.extraPorts }}
+        - name: {{ .name }}
+          containerPort: {{ .containerPort }}
+          protocol: {{ .protocol | default "TCP" }}
+        {{- end }}
+        - name: http
+          containerPort: 8123
+        - name: tcp
+          containerPort: 9000
+      {{- end }}

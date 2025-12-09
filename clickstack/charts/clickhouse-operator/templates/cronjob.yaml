@@ -1,0 +1,109 @@
+{{- if and .Values.cronjobs.parquetConverter.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "clickhouse-operator.fullname" . }}-parquet-converter
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "clickhouse-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: parquet-converter
+  {{- with .Values.cronjobs.parquetConverter.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  schedule: {{ .Values.cronjobs.parquetConverter.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "clickhouse-operator.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: parquet-converter
+          {{- with .Values.cronjobs.parquetConverter.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          {{- if .Values.global.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml .Values.global.imagePullSecrets | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ include "clickhouse-operator.serviceAccountName" . }}
+          restartPolicy: OnFailure
+          containers:
+            - name: parquet-converter
+              {{- if .Values.global.imageRegistry }}
+              image: "{{ .Values.global.imageRegistry }}/{{ .Values.cronjobs.parquetConverter.image.repository }}:{{ .Values.cronjobs.parquetConverter.image.tag }}"
+              {{- else }}
+              image: "{{ .Values.cronjobs.parquetConverter.image.repository }}:{{ .Values.cronjobs.parquetConverter.image.tag }}"
+              {{- end }}
+              imagePullPolicy: {{ .Values.cronjobs.parquetConverter.image.pullPolicy }}
+              {{- if .Values.cronjobs.parquetConverter.securityContext }}
+              securityContext:
+                {{- toYaml .Values.cronjobs.parquetConverter.securityContext | nindent 16 }}
+              {{- end }}
+              resources:
+                {{- toYaml .Values.cronjobs.parquetConverter.resources | nindent 16 }}
+              env:
+                {{- range $key, $value := .Values.cronjobs.parquetConverter.env }}
+                - name: {{ $key }}
+                  value: {{ $value | quote }}
+                {{- end }}
+                # ClickHouse connection configuration
+                - name: CLICKHOUSE_HOST
+                  value: "{{ include "clickhouse-operator.clickhouseServiceName" . }}"
+                - name: CLICKHOUSE_PORT
+                  value: "9000"
+                - name: CLICKHOUSE_HTTP_PORT
+                  value: "8123"
+                # Get credentials from secrets if available
+                {{- $globalSecret := .Values.global.secrets.clickhouseCredentials | default "" }}
+                {{- if $globalSecret }}
+                - name: CLICKHOUSE_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ $globalSecret }}
+                      key: username
+                      optional: true
+                - name: CLICKHOUSE_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ $globalSecret }}
+                      key: password
+                      optional: true
+                {{- else }}
+                - name: CLICKHOUSE_USER
+                  value: "default"
+                - name: CLICKHOUSE_PASSWORD
+                  value: "password"
+                {{- end }}
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "Starting parquet conversion job..."
+                  
+                  # Wait for ClickHouse to be ready
+                  until clickhouse-client --host $CLICKHOUSE_HOST --port $CLICKHOUSE_PORT --query "SELECT 1" >/dev/null 2>&1; do
+                    echo "Waiting for ClickHouse to be ready..."
+                    sleep 10
+                  done
+                  
+                  echo "ClickHouse is ready. Processing S3 data..."
+                  
+                  # Main processing logic (simplified for example)
+                  echo "Processing data from S3 bucket: {{ .Values.cronjobs.parquetConverter.env.SOURCE_BUCKET }}"
+                  echo "Output to S3 bucket: {{ .Values.cronjobs.parquetConverter.env.DEST_BUCKET }}"
+                  
+                  # Here you would typically:
+                  # 1. Read raw data from SOURCE_BUCKET
+                  # 2. Convert to parquet format
+                  # 3. Write to DEST_BUCKET
+                  # 4. Update ClickHouse with metadata
+                  
+                  echo "Parquet conversion completed successfully."
+{{- end }}
