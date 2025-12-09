@@ -94,10 +94,17 @@ env:
   TZ: UTC
   CLICKHOUSE_DB: "metrics_ingested"
 
-  # -- Additional environment variables
-  # CLICKHOUSE_LOG_LEVEL: debug
-  # CLICKHOUSE_MAX_MEMORY_USAGE: 8000000000
-  # CUSTOM_VAR: custom_value
+  # Custom ClickHouse settings
+  # CLICKHOUSE_LOG_LEVEL: information
+  # CLICKHOUSE_MAX_MEMORY_USAGE: "8000000000"
+  # CLICKHOUSE_MAX_THREADS: 8
+  
+  # Database settings
+  # CLICKHOUSE_DATABASE: my_database
+  
+  # Performance tuning
+  # CLICKHOUSE_UNCOMPRESSED_CACHE_SIZE: "8589934592"
+  # CLICKHOUSE_MARK_CACHE_SIZE: "5368709120"
 
 # -- List of extra arguments for the container
 extraArgs: []
