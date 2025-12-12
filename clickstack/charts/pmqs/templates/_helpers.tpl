@@ -74,3 +74,38 @@ This helper can be called from other charts like:
 {{- printf "%s.%s.svc.cluster.local:%.0f" $serviceName .Release.Namespace .Values.service.port -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+Get the ClickHouse credentials secret name
+Priority:
+1. .Values.secrets.clickhouse-credentials (chart-level override)
+2. .Values.global.secrets.clickhouse-credentials (global setting)
+3. Empty string (meaning: use default credentials inline)
+*/}}
+{{- define "pmqs.credentials.secretName" -}}
+{{- $chartSecret := index .Values.secrets "clickhouse-credentials" | default "" -}}
+{{- $globalSecret := "" -}}
+{{- if .Values.global -}}
+{{- if .Values.global.secrets -}}
+{{- $globalSecret = index .Values.global.secrets "clickhouse-credentials" | default "" -}}
+{{- end -}}
+{{- end -}}
+{{- if $chartSecret -}}
+{{ $chartSecret }}
+{{- else if $globalSecret -}}
+{{ $globalSecret }}
+{{- end -}}
+{{- end }}
+
+{{/*
+Check if we should use a secret reference for ClickHouse credentials
+Returns "true" if secret name is provided (chart-level or global), "false" otherwise
+*/}}
+{{- define "pmqs.credentials.useSecret" -}}
+{{- $secretName := include "pmqs.credentials.secretName" . -}}
+{{- if $secretName -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end }}

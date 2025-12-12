@@ -13,6 +13,36 @@
     </profiles>
 
     <users>
+        {{- $username := include "clickhouse.credentials.username" . }}
+        {{- $password := include "clickhouse.credentials.password" . }}
+        {{- $useExternal := include "clickhouse.credentials.useExternal" . }}
+        {{- if eq $username "default" }}
+        <!-- Using default user with configured password -->
+        <default>
+            {{- if ne $useExternal "true" }}
+            <password>{{ $password }}</password>
+            {{- else }}
+            <!-- Password from external secret: {{ include "clickhouse.credentials.secretName" . }} -->
+            <password></password>
+            {{- end }}
+            <profile>default</profile>
+            <networks>
+                <ip>::1</ip>
+                <ip>127.0.0.1</ip>
+                {{- if .Values.config.clusterCidrs }}
+                {{- range .Values.config.clusterCidrs }}
+                <ip>{{ . }}</ip>
+                {{- end }}
+                {{- end }}
+                <host_regexp>.*\.svc\.cluster\.local$</host_regexp>
+            </networks>
+            <quota>default</quota>
+            <grants>
+                <query>GRANT ALL ON *.*</query>
+            </grants>
+        </default>
+        {{- else }}
+        <!-- Custom user: {{ $username }} -->
         <default>
             <password></password>
             <profile>default</profile>
@@ -22,15 +52,12 @@
             </networks>
             <quota>default</quota>
         </default>
-        {{- $effectiveUsername := include "clickhouse.effectiveUsername" . }}
-        {{- $effectivePassword := include "clickhouse.effectivePassword" . }}
-        {{- $useExternalSecret := include "clickhouse.useExternalSecret" . }}
-        <!-- Always create an app user for application access -->
-        <{{ if eq $effectiveUsername "default" }}app{{ else }}{{ $effectiveUsername }}{{ end }}>
-            {{- if and (eq $useExternalSecret "true") (not (eq $effectiveUsername "default")) }}
-            <!-- Password will be loaded from external secret -->
+        <{{ $username }}>
+            {{- if ne $useExternal "true" }}
+            <password>{{ $password }}</password>
             {{- else }}
-            <password>{{ $effectivePassword }}</password>
+            <!-- Password from external secret: {{ include "clickhouse.credentials.secretName" . }} -->
+            <password></password>
             {{- end }}
             <networks>
                 {{- if .Values.config.clusterCidrs }}
@@ -38,7 +65,7 @@
                 <ip>{{ . }}</ip>
                 {{- end }}
                 {{- else }}
-                <ip>10.0.0.0/8</ip>  <!-- Default fallback -->
+                <ip>10.0.0.0/8</ip>
                 {{- end }}
                 <host_regexp>.*\.svc\.cluster\.local$</host_regexp>
             </networks>
@@ -50,7 +77,8 @@
                 <query>GRANT SELECT ON default.*</query>
                 <query>GRANT SELECT,INSERT,CREATE,SHOW ON default.*</query>
             </grants>
-        </{{ if eq $effectiveUsername "default" }}app{{ else }}{{ $effectiveUsername }}{{ end }}>
+        </{{ $username }}>
+        {{- end }}
     </users>
 
     <quotas>

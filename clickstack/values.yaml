@@ -7,8 +7,9 @@ global:
   imagePullSecrets: []
   # -- Secret references for external secrets
   secrets:
-    # -- External secret name containing ClickHouse credentials
-    clickhouseCredentials: ""
+    # -- External secret name containing ClickHouse credentials (keys: user, password)
+    # If empty, clickhouse chart creates a secret with default credentials (default/password)
+    clickhouse-credentials: ""
 
 pmqs:
   enabled: true
@@ -180,7 +181,8 @@ clickhouse:
   config:
     annotations: {}
     users:
-      appUserPassword: "password"
+      username: "default"
+      password: "password"
     clusterCidrs:
       - "10.0.0.0/8"
       - "172.16.0.0/12"
@@ -188,6 +190,8 @@ clickhouse:
   
   secrets:
     annotations: {}
+    # Override global.secrets.clickhouse-credentials at chart level if needed
+    clickhouse-credentials: ""
   
   # Probe Configurations - NEW
   livenessProbe:

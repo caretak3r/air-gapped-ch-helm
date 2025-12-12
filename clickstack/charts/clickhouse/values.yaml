@@ -286,10 +286,10 @@ config:
   # -- Annotations for ConfigMaps
   annotations: {}
   users:
-    # -- Username for the app user (overrides global.secrets.clickhouse-credentials)
-    username: ""
-    # -- Password for the app user (overrides global.secrets.clickhouse-credentials)
-    password: ""
+    # -- Username for the app user (used when creating default credentials)
+    username: "default"
+    # -- Password for the app user (used when creating default credentials)
+    password: "password"
   # -- Network CIDRs for Kubernetes cluster access control
   clusterCidrs:
     - "10.0.0.0/8" # Most Kubernetes clusters
@@ -309,6 +309,10 @@ scripts:
 secrets:
   # -- Annotations for Secrets
   annotations: {}
+  # -- Name of existing Kubernetes secret containing ClickHouse credentials (keys: user, password)
+  # If empty, the chart will create a secret with default credentials (default/password)
+  # Can also be set via global.secrets.clickhouse-credentials
+  clickhouse-credentials: ""
 
 # -- Scheduled Tasks (CronJobs)
 tasks:
@@ -317,7 +321,7 @@ tasks:
     enabled: true
     schedule: "*/10 * * * *"
     image:
-      repository: my-registry/parquet-converter
+      repository: parquet-converter
       tag: latest
       pullPolicy: Always
     # -- Pod level annotations for the cronjob

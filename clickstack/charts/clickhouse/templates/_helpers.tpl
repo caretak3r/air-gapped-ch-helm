@@ -85,44 +85,65 @@ This helper can be called from other charts like:
 {{- end }}
 
 {{/*
-Get the effective username for ClickHouse app user
-Priority: 
-1. clickhouse.config.users.username (if set)
-2. global.secrets.clickhouse-credentials.username (if secret exists)
-3. "default" (fallback)
+Get the ClickHouse credentials secret name
+Priority:
+1. .Values.secrets.clickhouse-credentials (chart-level override)
+2. .Values.global.secrets.clickhouse-credentials (global setting)
+3. Empty string (meaning: create default secret)
 */}}
-{{- define "clickhouse.effectiveUsername" -}}
-{{- if .Values.config.users.username -}}
-{{ .Values.config.users.username }}
-{{- else if .Values.global.secrets.clickhouseCredentials -}}
-{{ "default" }}
+{{- define "clickhouse.credentials.secretName" -}}
+{{- $chartSecret := index .Values.secrets "clickhouse-credentials" | default "" -}}
+{{- $globalSecret := "" -}}
+{{- if .Values.global -}}
+{{- if .Values.global.secrets -}}
+{{- $globalSecret = index .Values.global.secrets "clickhouse-credentials" | default "" -}}
+{{- end -}}
+{{- end -}}
+{{- if $chartSecret -}}
+{{ $chartSecret }}
+{{- else if $globalSecret -}}
+{{ $globalSecret }}
 {{- else -}}
-{{ "default" }}
+{{- /* No external secret specified, will use chart-created secret */ -}}
 {{- end -}}
 {{- end }}
 
 {{/*
-Get the effective password for ClickHouse app user  
-Priority: 
-1. clickhouse.config.users.password (if set)
-2. global.secrets.clickhouseCredentials.password (if secret exists)
-3. clickhouse.config.users.appUserPassword (fallback)
+Check if we should use an external (user-provided) secret for credentials
+Returns "true" if external secret name is provided, "false" otherwise
 */}}
-{{- define "clickhouse.effectivePassword" -}}
-{{- if .Values.config.users.password -}}
-{{ .Values.config.users.password }}
+{{- define "clickhouse.credentials.useExternal" -}}
+{{- $secretName := include "clickhouse.credentials.secretName" . -}}
+{{- if $secretName -}}
+true
 {{- else -}}
-{{ .Values.config.users.appUserPassword }}
+false
 {{- end -}}
 {{- end }}
 
 {{/*
-Check if we should use external secret for credentials
+Get the actual secret name to reference in pods
+If external secret is provided, use that; otherwise use the chart-created secret
 */}}
-{{- define "clickhouse.useExternalSecret" -}}
-{{- if and .Values.global.secrets.clickhouseCredentials (not .Values.config.users.username) (not .Values.config.users.password) }}
-{{ "true" }}
-{{- else }}
-{{ "false" }}
+{{- define "clickhouse.credentials.refName" -}}
+{{- $externalSecret := include "clickhouse.credentials.secretName" . -}}
+{{- if $externalSecret -}}
+{{ $externalSecret }}
+{{- else -}}
+{{ include "clickhouse.fullname" . }}-credentials
+{{- end -}}
 {{- end }}
+
+{{/*
+Get the effective username for ClickHouse (used when creating default secret)
+*/}}
+{{- define "clickhouse.credentials.username" -}}
+{{- .Values.config.users.username | default "default" -}}
+{{- end }}
+
+{{/*
+Get the effective password for ClickHouse (used when creating default secret)
+*/}}
+{{- define "clickhouse.credentials.password" -}}
+{{- .Values.config.users.password | default "password" -}}
 {{- end }}

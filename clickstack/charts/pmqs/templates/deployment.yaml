@@ -50,22 +50,21 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
-            {{- $globalSecret := .Values.global.secrets.clickhouseCredentials | default "" }}
-            {{- if $globalSecret }}
-            - name: CLICKHOUSE_USERNAME
+            {{- $useSecret := include "pmqs.credentials.useSecret" . -}}
+            {{- if eq $useSecret "true" }}
+            {{- $secretName := include "pmqs.credentials.secretName" . }}
+            - name: CLICKHOUSE_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ $globalSecret }}
-                  key: username
-                  optional: true
+                  name: {{ $secretName | trim }}
+                  key: user
             - name: CLICKHOUSE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ $globalSecret }}
+                  name: {{ $secretName | trim }}
                   key: password
-                  optional: true
             {{- else }}
-            - name: CLICKHOUSE_USERNAME
+            - name: CLICKHOUSE_USER
               value: "default"
             - name: CLICKHOUSE_PASSWORD
               value: "password"

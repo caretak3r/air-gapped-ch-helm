@@ -79,18 +79,12 @@ env:
   SECRETS_ROUTER_URL: "" # this will eventually be auto-injected into your service pods
   CLICKHOUSE_HOST: ""
   CLICKHOUSE_PORT: ""
-  CLICKHOUSE_USER:
-    valueFrom:
-      secretKeyRef:
-        name: clickhouse-credentials
-        key: user
-  CLICKHOUSE_PASSWORD:
-    valueFrom:
-      secretKeyRef:
-        name: clickhouse-credentials
-        key: password
 
 # -- Secrets configuration
 secrets:
   # -- Annotations for Secrets
   annotations: {}
+  # -- Name of existing Kubernetes secret containing ClickHouse credentials (keys: user, password)
+  # If empty, falls back to global.secrets.clickhouse-credentials
+  # If both are empty, uses default credentials (default/password)
+  clickhouse-credentials: ""

@@ -1,0 +1,9 @@
+dependencies:
+- name: pmqs
+  repository: file://charts/pmqs
+  version: 0.1.0
+- name: clickhouse
+  repository: file://charts/clickhouse
+  version: 0.1.0
+digest: sha256:1dd06481313c9e4645763cf5d02d334c4a75676144c130ce7208ff4c47581b56
+generated: "2025-12-11T15:03:23.39268-05:00"
